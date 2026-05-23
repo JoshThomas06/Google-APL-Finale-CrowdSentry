@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SENTRY AI | Tactical Alerts</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Outfit:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        :root {
+            --obsidian: #07090e;
+        }
+        body {
+            background-color: var(--obsidian);
+            color: #e2e2ea;
+            overflow-x: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(16, 21, 36, 0.5);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(132, 148, 149, 0.2);
+        }
+        .glass-panel-active {
+            border-left: 2px solid #00f0ff;
+            background: rgba(0, 240, 255, 0.05);
+        }
+        .corner-accent {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-top: 2px solid #00f0ff;
+            border-left: 2px solid #00f0ff;
+            top: -1px;
+            left: -1px;
+        }
+        .critical-glow {
+            box-shadow: 0 0 15px rgba(255, 69, 58, 0.4);
+            border-color: rgba(255, 69, 58, 0.5) !important;
+        }
+        .grid-overlay {
+            background-image: linear-gradient(rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                "surface-tint": "#00dbe9",
+                "surface-container-highest": "#33353b",
+                "secondary-container": "#44485a",
+                "on-surface-variant": "#b9cacb",
+                "tertiary": "#dbffde",
+                "on-primary-container": "#006970",
+                "tertiary-fixed": "#62ff96",
+                "on-secondary-container": "#b3b8cc",
+                "on-tertiary-container": "#006e35",
+                "surface-dim": "#111319",
+                "on-primary-fixed-variant": "#004f54",
+                "outline-variant": "#3b494b",
+                "inverse-primary": "#006970",
+                "on-tertiary": "#003918",
+                "background": "#111319",
+                "primary-container": "#00f0ff",
+                "primary-fixed-dim": "#00dbe9",
+                "on-secondary-fixed": "#161b2a",
+                "error-container": "#93000a",
+                "surface-container-lowest": "#0c0e13",
+                "on-primary-fixed": "#002022",
+                "on-background": "#e2e2ea",
+                "surface-variant": "#33353b",
+                "outline": "#849495",
+                "on-tertiary-fixed": "#00210b",
+                "error": "#ffb4ab",
+                "surface": "#111319",
+                "surface-container-high": "#282a30",
+                "primary": "#dbfcff",
+                "tertiary-fixed-dim": "#00e475",
+                "surface-container": "#1d2025",
+                "on-secondary-fixed-variant": "#414657",
+                "tertiary-container": "#34f885",
+                "on-error-container": "#ffdad6",
+                "secondary-fixed": "#dee1f7",
+                "secondary-fixed-dim": "#c1c6db",
+                "on-surface": "#e2e2ea",
+                "inverse-surface": "#e2e2ea",
+                "on-secondary": "#2b3040",
+                "primary-fixed": "#7df4ff",
+                "on-primary": "#00363a",
+                "surface-bright": "#37393f",
+                "on-error": "#690005",
+                "surface-container-low": "#191c21",
+                "secondary": "#c1c6db",
+                "inverse-on-surface": "#2e3036",
+                "on-tertiary-fixed-variant": "#005226"
+              },
+              "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+              },
+              "spacing": {
+                "panel-gap": "12px",
+                "gutter": "24px",
+                "margin-desktop": "48px",
+                "unit": "4px",
+                "margin-mobile": "16px"
+              },
+              "fontFamily": {
+                "body-sm": ["Inter"],
+                "mono-metrics": ["Inter"],
+                "label-caps": ["Inter"],
+                "body-base": ["Inter"],
+                "headline-md": ["Outfit"],
+                "display-lg": ["Outfit"]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface min-h-screen">
+<!-- Background Grid -->
+<div class="fixed inset-0 grid-overlay pointer-events-none opacity-20"></div>
+<!-- TopNavBar -->
+<header class="w-full top-0 sticky bg-surface-container/50 backdrop-blur-xl border-b border-outline-variant/20 shadow-[0_0_20px_rgba(0,240,255,0.1)] z-50">
+<div class="flex justify-between items-center w-full px-margin-desktop h-16">
+<div class="font-display-lg text-headline-md text-primary-container drop-shadow-[0_0_8px_#00f0ff] uppercase tracking-tighter">
+                SENTRY AI
+            </div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-on-surface-variant font-medium hover:text-primary-fixed transition-colors duration-300" href="#">TACTICAL</a>
+<a class="text-on-surface-variant font-medium hover:text-primary-fixed transition-colors duration-300" href="#">TELEMETRY</a>
+<a class="text-on-surface-variant font-medium hover:text-primary-fixed transition-colors duration-300" href="#">LOGISTICS</a>
+<a class="text-primary-container border-b-2 border-primary-container font-bold pb-1" href="#">ALERTS</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary-container active:scale-95 transition-all">settings</button>
+<button class="material-symbols-outlined text-primary-container hover:text-primary-fixed-dim active:scale-95 transition-all">notifications_active</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary-container active:scale-95 transition-all">account_circle</button>
+</div>
+</div>
+</header>
+<main class="flex h-[calc(100vh-64px)] overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full w-64 left-0 sticky bg-surface-dim/80 backdrop-blur-2xl border-r border-outline-variant/30 shadow-2xl">
+<div class="p-6 flex items-center gap-3 border-b border-outline-variant/10">
+<div class="w-10 h-10 rounded bg-primary-container/20 border border-primary-container/40 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">admin_panel_settings</span>
+</div>
+<div>
+<div class="font-headline-md text-primary text-[14px] uppercase tracking-wider">OPERATOR 01</div>
+<div class="font-body-sm text-on-surface-variant text-[10px] uppercase tracking-widest">Sector A-7 Deployment</div>
+</div>
+</div>
+<nav class="flex-1 mt-4">
+<div class="text-on-surface-variant p-4 flex items-center gap-3 hover:bg-surface-container-high cursor-pointer transition-all">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-sm uppercase tracking-widest">Overview</span>
+</div>
+<div class="text-on-surface-variant p-4 flex items-center gap-3 hover:bg-surface-container-high cursor-pointer transition-all">
+<span class="material-symbols-outlined">dataset</span>
+<span class="font-body-sm uppercase tracking-widest">Heatmap</span>
+</div>
+<div class="bg-primary-container/10 text-primary-container border-l-4 border-primary-container p-4 flex items-center gap-3 cursor-pointer">
+<span class="material-symbols-outlined">notifications_active</span>
+<span class="font-body-sm uppercase tracking-widest font-bold">Alerts</span>
+</div>
+<div class="text-on-surface-variant p-4 flex items-center gap-3 hover:bg-surface-container-high cursor-pointer transition-all">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-body-sm uppercase tracking-widest">Staff</span>
+</div>
+<div class="text-on-surface-variant p-4 flex items-center gap-3 hover:bg-surface-container-high cursor-pointer transition-all">
+<span class="material-symbols-outlined">history</span>
+<span class="font-body-sm uppercase tracking-widest">Archive</span>
+</div>
+</nav>
+<div class="p-4">
+<button class="w-full bg-primary-container text-on-primary-fixed py-3 font-bold uppercase tracking-widest text-[12px] active:brightness-125 transition-all shadow-[0_0_15px_rgba(0,240,255,0.3)]">
+                    DEPLOYSQUAD
+                </button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<section class="flex-1 flex overflow-hidden p-6 gap-6">
+<!-- Alert Feed (Left Column) -->
+<div class="w-full md:w-[400px] flex flex-col h-full gap-4">
+<div class="flex justify-between items-end mb-2">
+<h2 class="font-headline-md text-primary tracking-tight">INCIDENT FEED</h2>
+<span class="font-label-caps text-on-surface-variant text-[10px]">TOTAL: 24 ACTIVE</span>
+</div>
+<div class="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+<!-- Critical Alert -->
+<div class="glass-panel p-4 relative cursor-pointer border-l-4 border-l-red-500 critical-glow group hover:bg-red-500/5 transition-colors">
+<div class="flex justify-between items-start mb-2">
+<span class="bg-red-500 text-white font-label-caps px-2 py-0.5 text-[10px] tracking-widest">CRITICAL</span>
+<span class="font-mono-metrics text-[12px] text-on-surface-variant">14:22:01</span>
+</div>
+<h3 class="font-headline-md text-[18px] text-red-400 mb-1">CROWD ANOMALY: ZONE B-4</h3>
+<p class="font-body-sm text-on-surface-variant text-[13px]">Rapid density increase detected. Threshold exceeded by 45%. Panic index rising.</p>
+<div class="mt-3 flex gap-4">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-red-500">groups</span>
+<span class="text-[12px] font-bold">1.2k</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-red-500">trending_up</span>
+<span class="text-[12px] font-bold">SEVERE</span>
+</div>
+</div>
+</div>
+<!-- Warning Alert -->
+<div class="glass-panel p-4 relative cursor-pointer border-l-4 border-l-orange-500 group hover:bg-orange-500/5 transition-colors">
+<div class="flex justify-between items-start mb-2">
+<span class="bg-orange-500 text-white font-label-caps px-2 py-0.5 text-[10px] tracking-widest">WARNING</span>
+<span class="font-mono-metrics text-[12px] text-on-surface-variant">14:18:45</span>
+</div>
+<h3 class="font-headline-md text-[18px] text-orange-400 mb-1">UNAUTHORIZED ACCESS</h3>
+<p class="font-body-sm text-on-surface-variant text-[13px]">Gate 12 secondary perimeter breached. Unit D-12 investigating.</p>
+</div>
+<!-- Info Alert -->
+<div class="glass-panel p-4 relative cursor-pointer border-l-4 border-l-primary-container group hover:bg-primary-container/5 transition-colors">
+<div class="flex justify-between items-start mb-2">
+<span class="bg-primary-container text-on-primary-fixed font-label-caps px-2 py-0.5 text-[10px] tracking-widest">INFO</span>
+<span class="font-mono-metrics text-[12px] text-on-surface-variant">14:15:30</span>
+</div>
+<h3 class="font-headline-md text-[18px] text-primary-container mb-1">UNIT ROTATION COMPLETE</h3>
+<p class="font-body-sm text-on-surface-variant text-[13px]">Sector A shifts exchanged successfully. All systems nominal.</p>
+</div>
+<!-- Repeat Info -->
+<div class="glass-panel p-4 relative cursor-pointer border-l-4 border-l-primary-container opacity-60">
+<div class="flex justify-between items-start mb-2">
+<span class="bg-primary-container text-on-primary-fixed font-label-caps px-2 py-0.5 text-[10px] tracking-widest">INFO</span>
+<span class="font-mono-metrics text-[12px] text-on-surface-variant">14:02:11</span>
+</div>
+<h3 class="font-headline-md text-[18px] text-primary-container mb-1">DATA SYNC COMPLETE</h3>
+<p class="font-body-sm text-on-surface-variant text-[13px]">Remote telemetry buffers cleared.</p>
+</div>
+</div>
+</div>
+<!-- Detailed Incident View (Right Column) -->
+<div class="hidden md:flex flex-1 flex-col gap-6 h-full">
+<!-- Incident Header -->
+<div class="glass-panel p-6 relative">
+<div class="corner-accent"></div>
+<div class="flex justify-between items-start mb-6">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-red-500 animate-pulse" style="font-variation-settings: 'FILL' 1;">warning</span>
+<h1 class="font-display-lg text-[32px] text-red-500 tracking-tight">INCIDENT REPORT #A7-2491</h1>
+</div>
+<p class="font-body-base text-on-surface-variant">Location: Commercial Plaza - Zone B-4 | Severity: Level 5 Tactical</p>
+</div>
+<div class="text-right">
+<div class="font-mono-metrics text-red-400 text-[24px]">00:04:12</div>
+<div class="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest">ELAPSED TIME</div>
+</div>
+</div>
+<!-- Tactical Map Snapshot -->
+<div class="relative w-full h-[300px] border border-outline-variant/30 overflow-hidden mb-6 group">
+<div class="absolute inset-0 bg-blue-900/20 z-10 pointer-events-none"></div>
+<img alt="Tactical Map" class="w-full h-full object-cover grayscale brightness-50 opacity-80 group-hover:scale-105 transition-transform duration-1000" data-alt="A high-contrast, satellite-view tactical map of a crowded urban plaza at night, rendered in a futuristic blue and cyan digital overlay. Glowing red heat signatures represent dense crowd clusters, while sharp white vector lines outline building perimeters and emergency exits. The aesthetic is inspired by advanced military HUDs, featuring digital telemetry readouts, scanning lines, and geometric data points throughout the composition. Lighting is atmospheric, dominated by deep obsidian shadows and electric neon highlights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7oAVfhWozpQpWKgAz42wnTUgVqbSHP7TiACZTcAkjd4MdTpInxXYHMasScnYwoQVY7pix2dFrfhItdgnda_YQPPeAc1sp-YV8GGMFo_lQkiuwpaO_P9IFsE5mALMEbIZymsIVlenG_cf9grv3CWaPKakNrJ_6ai2Bk6H-o51JfeSjB7mgrefAvj5Yyrg77M1dHIRnAVdE_my2YqZwkGv9ZanwEwOPcnhEyl3ZXDJCHVJhjCv8zNucZji9LIZrAsFqEGGbXjTRDAYx"/>
+<!-- Overlay UI for map -->
+<div class="absolute inset-0 z-20 p-4 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div class="bg-black/60 backdrop-blur px-3 py-1 border border-primary-container/30">
+<span class="text-[10px] font-mono-metrics text-primary-container">LAT: 34.0522° N | LONG: 118.2437° W</span>
+</div>
+<div class="flex gap-2">
+<button class="bg-black/60 p-2 border border-outline-variant/30 text-white material-symbols-outlined text-[18px]">zoom_in</button>
+<button class="bg-black/60 p-2 border border-outline-variant/30 text-white material-symbols-outlined text-[18px]">layers</button>
+</div>
+</div>
+<div class="flex justify-center">
+<div class="bg-red-500/20 backdrop-blur-md border border-red-500 p-4 rounded-full animate-ping absolute"></div>
+<div class="bg-red-500 border border-white p-2 rounded-full relative z-30 shadow-[0_0_15px_#ff0000]"></div>
+</div>
+<div class="flex justify-between items-end">
+<div class="font-label-caps text-white text-[12px] bg-red-600 px-2 py-1">LIVE FEED: CAM_B4_NW</div>
+<div class="bg-black/40 text-[10px] text-on-surface-variant p-1">RECOGNITION ENGINE: ACTIVE</div>
+</div>
+</div>
+</div>
+<!-- AI Recommended Actions -->
+<div class="space-y-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-tertiary-fixed-dim" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="font-label-caps text-tertiary-fixed-dim tracking-[0.2em] uppercase">SENTRY AI RECOMMENDATIONS</span>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-low p-3 border border-outline-variant/20">
+<div class="text-[11px] text-on-surface-variant font-bold mb-1 uppercase tracking-tighter">Primary Threat</div>
+<div class="text-[14px] text-white">Bottleneck at Exit 4-A. High injury risk.</div>
+</div>
+<div class="bg-surface-container-low p-3 border border-outline-variant/20">
+<div class="text-[11px] text-on-surface-variant font-bold mb-1 uppercase tracking-tighter">Recommended Vector</div>
+<div class="text-[14px] text-white">Reroute traffic through Main Hallway.</div>
+</div>
+</div>
+</div>
+</div>
+<!-- High-Contrast Actions -->
+<div class="grid grid-cols-3 gap-4 h-[100px]">
+<button class="bg-red-600 hover:bg-red-500 text-white font-headline-md flex flex-col items-center justify-center gap-1 transition-all active:scale-95 shadow-[0_4px_20px_rgba(255,0,0,0.3)]">
+<span class="material-symbols-outlined">campaign</span>
+<span class="text-[14px] uppercase tracking-widest">Broadcast Evac</span>
+</button>
+<button class="bg-orange-600 hover:bg-orange-500 text-white font-headline-md flex flex-col items-center justify-center gap-1 transition-all active:scale-95 shadow-[0_4px_20px_rgba(255,165,0,0.3)]">
+<span class="material-symbols-outlined">rocket_launch</span>
+<span class="text-[14px] uppercase tracking-widest">Rapid Response</span>
+</button>
+<button class="bg-surface-container-highest hover:bg-surface-bright text-on-surface font-headline-md border border-outline-variant/30 flex flex-col items-center justify-center gap-1 transition-all active:scale-95">
+<span class="material-symbols-outlined text-primary-container">task_alt</span>
+<span class="text-[14px] uppercase tracking-widest text-primary-container">Clear Alert</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 bg-surface-container-lowest/90 backdrop-blur-md border-t border-primary-container/20">
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-3 hover:text-primary-fixed-dim">
+<span class="material-symbols-outlined">confirmation_number</span>
+<span class="font-label-caps text-[10px]">Tickets</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-3 hover:text-primary-fixed-dim">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-caps text-[10px]">Map</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full p-3 shadow-[0_0_15px_#00f0ff]">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="font-label-caps text-[10px]">Alerts</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-3 hover:text-primary-fixed-dim">
+<span class="material-symbols-outlined">emergency</span>
+<span class="font-label-caps text-[10px]">SOS</span>
+</div>
+</nav>
+<script>
+        // Simple micro-interactions
+        const alerts = document.querySelectorAll('.glass-panel');
+        alerts.forEach(alert => {
+            alert.addEventListener('click', () => {
+                alerts.forEach(a => a.classList.remove('glass-panel-active'));
+                alert.classList.add('glass-panel-active');
+            });
+        });
+
+        // Atmospheric scanline effect simulation
+        const mapContainer = document.querySelector('img[data-alt]').parentElement;
+        const scanline = document.createElement('div');
+        scanline.className = 'absolute top-0 left-0 w-full h-[2px] bg-primary-container/20 z-20 pointer-events-none';
+        mapContainer.appendChild(scanline);
+
+        let pos = 0;
+        function animateScan() {
+            pos += 1;
+            if (pos > 300) pos = 0;
+            scanline.style.top = pos + 'px';
+            requestAnimationFrame(animateScan);
+        }
+        animateScan();
+    </script>
+</body></html>

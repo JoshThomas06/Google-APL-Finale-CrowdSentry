@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SENTRY AI | Tactical Command &amp; Companion</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Outfit:wght@600;700;800&amp;family=Space+Grotesk:wght@600;700&amp;family=JetBrains+Mono:wght@400;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(16, 21, 36, 0.65);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(59, 73, 75, 0.4);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+            border-radius: 1.5rem;
+        }
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(0, 240, 255, 0.1) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .glass-panel:hover::before {
+            opacity: 1;
+        }
+        .neon-glow-cyan {
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+        }
+        .terminal-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .terminal-scroll::-webkit-scrollbar-thumb {
+            background: #34f885;
+            border-radius: 2px;
+        }
+        @keyframes flow {
+            from { stroke-dashoffset: 100; }
+            to { stroke-dashoffset: 0; }
+        }
+        .flow-line {
+            stroke-dasharray: 5, 5;
+            animation: flow 2s linear infinite;
+        }
+        #particle-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(52, 248, 133, 0.3); }
+            50% { box-shadow: 0 0 25px rgba(52, 248, 133, 0.8); }
+        }
+        .qr-pulse {
+            animation: pulse-glow 3s infinite ease-in-out;
+        }
+        @keyframes breathing {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+        .breathing-icon {
+            animation: breathing 2s infinite ease-in-out;
+        }
+        .typing-cursor::after {
+            content: '_';
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink {
+            from, to { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        @keyframes emergency-flash {
+            0%, 100% { opacity: 1; fill: #ffb4ab; }
+            50% { opacity: 0.4; fill: #93000a; }
+        }
+        .gate-jammed {
+            animation: emergency-flash 0.5s infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .flow-line, .qr-pulse, .breathing-icon, .typing-cursor::after, .particle-canvas, .animate-pulse, .animate-ping, .gate-jammed {
+                animation: none !important;
+            }
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                "secondary-container": "#44485a",
+                "error-container": "#93000a",
+                "tertiary-fixed": "#62ff96",
+                "secondary-fixed": "#dee1f7",
+                "on-secondary-container": "#b3b8cc",
+                "on-secondary-fixed": "#161b2a",
+                "on-tertiary-container": "#006e35",
+                "outline-variant": "#3b494b",
+                "tertiary-container": "#34f885",
+                "on-secondary": "#2b3040",
+                "surface-bright": "#37393f",
+                "surface-container-highest": "#33353b",
+                "on-tertiary-fixed-variant": "#005226",
+                "surface-container-high": "#282a30",
+                "primary-container": "#00f0ff",
+                "surface-tint": "#00dbe9",
+                "on-primary-fixed": "#002022",
+                "on-surface-variant": "#b9cacb",
+                "on-primary": "#00363a",
+                "on-error-container": "#ffdad6",
+                "inverse-on-surface": "#2e3036",
+                "error": "#ffb4ab",
+                "on-tertiary-fixed": "#00210b",
+                "primary-fixed": "#7df4ff",
+                "surface-dim": "#111319",
+                "on-background": "#e2e2ea",
+                "surface-variant": "#33353b",
+                "tertiary-fixed-dim": "#00e475",
+                "background": "#111319",
+                "on-primary-fixed-variant": "#004f54",
+                "on-error": "#690005",
+                "primary-fixed-dim": "#00dbe9",
+                "surface-container-lowest": "#0c0e13",
+                "secondary-fixed-dim": "#c1c6db",
+                "on-primary-container": "#006970",
+                "surface-container-low": "#191c21",
+                "surface": "#111319",
+                "primary": "#dbfcff",
+                "on-tertiary": "#003918",
+                "secondary": "#c1c6db",
+                "inverse-primary": "#006970",
+                "surface-container": "#1d2025",
+                "on-secondary-fixed-variant": "#414657",
+                "outline": "#849495",
+                "on-surface": "#e2e2ea",
+                "inverse-surface": "#e2e2ea",
+                "tertiary": "#dbffde"
+              },
+              "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem",
+                "2xl": "1.5rem",
+                "3xl": "2rem"
+              },
+              "spacing": {
+                "gutter": "24px",
+                "margin-mobile": "16px",
+                "margin-desktop": "48px",
+                "panel-gap": "12px",
+                "unit": "4px"
+              },
+              "fontFamily": {
+                "body-base": ["Inter"],
+                "mono-metrics": ["JetBrains Mono"],
+                "display-lg-mobile": ["Space Grotesk"],
+                "headline-md": ["Space Grotesk"],
+                "display-lg": ["Space Grotesk"],
+                "body-sm": ["Inter"],
+                "label-caps": ["Outfit"]
+              },
+              "fontSize": {
+                "body-base": ["16px", {"lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "400"}],
+                "mono-metrics": ["18px", {"lineHeight": "24px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                "display-lg-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "0.02em", "fontWeight": "700"}],
+                "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.03em", "fontWeight": "700"}],
+                "body-sm": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "400"}],
+                "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.15em", "fontWeight": "700"}]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-surface-container-lowest text-on-surface selection:bg-primary-container selection:text-on-primary-container min-h-screen overflow-hidden font-body-base">
+<header class="w-full top-0 sticky bg-surface-container/80 backdrop-blur-xl border-b border-outline-variant/30 shadow-[0_0_20px_rgba(0,240,255,0.15)] z-50">
+<div class="flex justify-between items-center w-full px-margin-desktop h-16">
+<div class="flex items-center gap-10">
+<h1 class="font-display-lg text-[28px] tracking-tighter text-primary-container drop-shadow-[0_0_12px_rgba(0,240,255,0.4)]">SENTRY AI</h1>
+<nav class="hidden md:flex gap-8">
+<a class="text-primary-container border-b-2 border-primary-container font-bold pb-1 transition-all duration-300 uppercase text-[12px] tracking-widest" href="#">Tactical</a>
+<a class="text-on-surface-variant font-medium hover:text-primary-fixed transition-all duration-300 uppercase text-[12px] tracking-widest" href="#">Telemetry</a>
+<a class="text-on-surface-variant font-medium hover:text-primary-fixed transition-all duration-300 uppercase text-[12px] tracking-widest" href="#">Logistics</a>
+<a class="text-on-surface-variant font-medium hover:text-primary-fixed transition-all duration-300 uppercase text-[12px] tracking-widest" href="#">Alerts</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<button class="active:scale-95 transition-transform"><span class="material-symbols-outlined text-on-surface-variant hover:text-primary-fixed transition-colors">settings</span></button>
+<button class="active:scale-95 transition-transform relative">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary-fixed transition-colors">notifications_active</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-primary-container rounded-full animate-pulse shadow-[0_0_8px_#00f0ff]"></span>
+</button>
+<button class="active:scale-95 transition-transform"><span class="material-symbols-outlined text-on-surface-variant hover:text-primary-fixed transition-colors">account_circle</span></button>
+</div>
+</div>
+</header>
+<main class="flex h-[calc(100vh-64px)] w-full overflow-hidden">
+<!-- Tactical Command Center (65%) -->
+<section class="w-[65%] h-full p-gutter flex flex-col gap-panel-gap bg-[radial-gradient(circle_at_center,_#111319_0%,_#07090e_100%)]">
+<!-- Telemetry Widgets -->
+<div class="grid grid-cols-3 gap-panel-gap">
+<div class="glass-panel p-6 rounded-2xl neon-glow-cyan border-l-4 border-primary-container">
+<p class="font-label-caps text-on-surface-variant mb-2">EGRESS RATE</p>
+<div class="flex items-baseline gap-2">
+<span class="font-mono-metrics text-3xl text-primary-container">185</span>
+<span class="font-body-sm text-on-surface-variant">fans/min</span>
+</div>
+<div class="w-full bg-surface-container h-1 mt-4 rounded-full overflow-hidden">
+<div class="bg-primary-container h-full w-3/4 animate-pulse"></div>
+</div>
+</div>
+<div class="glass-panel p-6 rounded-2xl border-l-4 border-tertiary-container">
+<p class="font-label-caps text-on-surface-variant mb-2">CONGESTION RISK</p>
+<div class="flex items-baseline gap-2">
+<span class="font-mono-metrics text-3xl text-tertiary-container">18%</span>
+<span class="font-body-sm text-on-surface-variant">Optimal</span>
+</div>
+<div class="w-full bg-surface-container h-1 mt-4 rounded-full overflow-hidden">
+<div class="bg-tertiary-container h-full w-1/5 shadow-[0_0_10px_#62ff96]"></div>
+</div>
+</div>
+<div class="glass-panel p-6 rounded-2xl border-l-4 border-error">
+<p class="font-label-caps text-on-surface-variant mb-2">GATE 2 LOAD</p>
+<div class="flex items-baseline gap-2">
+<span class="font-mono-metrics text-3xl text-error">98%</span>
+<span class="font-body-sm text-on-surface-variant">Critical</span>
+</div>
+<div class="w-full bg-surface-container h-1 mt-4 rounded-full overflow-hidden">
+<div class="bg-error h-full w-[98%] shadow-[0_0_10px_#ffb4ab]"></div>
+</div>
+</div>
+</div>
+<!-- Stadium Blueprint Visualizer -->
+<div class="flex-grow glass-panel rounded-2xl relative overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" id="visualizer-container">
+<canvas id="particle-canvas"></canvas>
+<div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: linear-gradient(#00f0ff 1px, transparent 1px), linear-gradient(90deg, #00f0ff 1px, transparent 1px); background-size: 40px 40px;"></div>
+<div class="absolute inset-0 flex items-center justify-center p-8">
+<svg class="w-full h-full max-w-[800px] drop-shadow-[0_0_30px_rgba(0,240,255,0.1)]" id="stadium-svg" viewbox="0 0 800 500">
+<!-- Restricted Field Zone -->
+<ellipse cx="400" cy="250" fill="rgba(0, 0, 0, 0.4)" id="stadium-boundary" rx="320" ry="200" stroke="#3b494b" stroke-dasharray="4" stroke-width="1.5"></ellipse>
+<!-- Central Pitch (Restricted) -->
+<rect fill="#1d2025" height="120" id="pitch-restricted" rx="4" stroke="#00f0ff66" stroke-width="1" width="60" x="370" y="190"></rect>
+<line stroke="#00f0ff33" stroke-width="1" x1="400" x2="400" y1="190" y2="310"></line>
+<!-- Tiers (Spawn Points) -->
+<g fill="none" stroke="#3b494b" stroke-width="0.8">
+<path d="M100 250 A300 180 0 0 1 700 250 A300 180 0 0 1 100 250" id="inner-tier" stroke-width="1"></path>
+<path d="M40 250 A360 220 0 0 1 760 250 A360 220 0 0 1 40 250" id="outer-tier" stroke-opacity="0.3" stroke-width="1"></path>
+<line x1="100" x2="40" y1="250" y2="250"></line>
+<line x1="700" x2="760" y1="250" y2="250"></line>
+<line x1="400" x2="400" y1="70" y2="10"></line>
+<line x1="400" x2="400" y1="430" y2="490"></line>
+</g>
+<!-- Gate Markers -->
+<g class="gates" font-family="Space Grotesk">
+<!-- GATE 1 - Top -->
+<g transform="translate(380, 45)">
+<rect class="animate-pulse shadow-[0_0_10px_#34f885]" fill="#34f885" height="14" rx="2" width="40" x="0" y="0"></rect>
+<text class="font-bold text-[11px]" fill="#34f885" text-anchor="middle" x="20" y="-10">GATE 1</text>
+</g>
+<!-- GATE 2 - Right -->
+<g id="gate-2-marker" transform="translate(730, 230)">
+<rect class="animate-pulse shadow-[0_0_15px_#ffb4ab]" fill="#ffb4ab" height="40" id="gate-2-rect" rx="2" width="14" x="0" y="0"></rect>
+<text class="font-bold text-[11px]" fill="#ffb4ab" id="gate-2-text" text-anchor="start" x="20" y="25">GATE 2 (CRITICAL)</text>
+<!-- Hidden Block Overlay -->
+<g id="gate-2-jam-overlay" style="display: none;">
+<line stroke="#ffb4ab" stroke-width="2" x1="0" x2="14" y1="0" y2="40"></line>
+<line stroke="#ffb4ab" stroke-width="2" x1="14" x2="0" y1="0" y2="40"></line>
+</g>
+</g>
+<!-- GATE 3 - Bottom -->
+<g transform="translate(380, 440)">
+<rect class="animate-pulse shadow-[0_0_10px_#34f885]" fill="#34f885" height="14" rx="2" width="40" x="0" y="0"></rect>
+<text class="font-bold text-[11px]" fill="#34f885" text-anchor="middle" x="20" y="32">GATE 3</text>
+</g>
+</g>
+</svg>
+</div>
+<div class="absolute top-6 left-6 flex gap-3">
+<div class="px-4 py-1.5 bg-primary-container/20 text-primary-container rounded-lg text-[10px] font-bold border border-primary-container/50 tracking-widest uppercase">Live Telemetry</div>
+<div class="px-4 py-1.5 bg-surface-container/80 text-on-surface-variant rounded-lg text-[10px] font-bold border border-outline-variant tracking-widest uppercase">Stadium B-2</div>
+</div>
+</div>
+<div class="flex gap-panel-gap h-48">
+<!-- Simulator Control Deck -->
+<div class="w-1/3 glass-panel p-6 rounded-3xl bg-surface-container-low/60 border border-outline-variant/30 flex flex-col">
+<h2 class="font-display-lg uppercase text-[11px] tracking-widest text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">settings_input_component</span>
+            Simulator Control Deck
+        </h2>
+<div class="flex flex-col gap-2">
+<button class="flex items-center justify-between px-4 py-2.5 bg-tertiary-container/10 border border-tertiary-container/30 text-tertiary-container hover:bg-tertiary-container/20 transition-all rounded-xl group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-sm">play_arrow</span>
+<span class="font-label-caps text-[11px]">Start Egress</span>
+</div>
+<span class="text-[9px] font-mono opacity-60">INIT</span>
+</button>
+<button class="flex items-center justify-between px-4 py-2.5 bg-secondary-container/10 border border-secondary-container/30 text-secondary-fixed hover:bg-secondary-container/20 transition-all rounded-xl group relative overflow-hidden" id="jam-gate-btn" onclick="toggleJamGate()">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-sm" id="jam-icon">block</span>
+<span class="font-label-caps text-[11px]" id="jam-text">Jam Gate 2</span>
+</div>
+<span class="text-[9px] font-mono opacity-60">BLOCK</span>
+<div class="absolute bottom-0 left-0 h-0.5 bg-error transition-all duration-300" id="jam-status-bar" style="width: 0%"></div>
+</button>
+<button class="flex items-center justify-between px-4 py-2.5 bg-error/10 border border-error/30 text-error hover:bg-error/20 transition-all rounded-xl group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-sm">warning</span>
+<span class="font-label-caps text-[11px]">Storm Warning</span>
+</div>
+<span class="text-[9px] font-mono opacity-60">EVAC</span>
+</button>
+</div>
+</div>
+<!-- Terminal Logs -->
+<div class="flex-grow glass-panel p-6 rounded-3xl flex flex-col font-mono text-[12px] bg-black/40 border border-outline-variant/30">
+<div class="flex justify-between items-center mb-3 border-b border-outline-variant/30 pb-2">
+<span class="text-on-surface-variant font-bold flex items-center gap-2 font-display-lg uppercase text-[11px] tracking-widest">
+<span class="w-2 h-2 bg-tertiary-container rounded-full animate-ping"></span>
+                AI Core System Reasoning
+            </span>
+<span class="text-on-surface-variant/50 font-mono">v4.2.0-PREMIUM_CORE</span>
+</div>
+<div class="terminal-scroll flex-grow overflow-y-auto space-y-1.5 text-tertiary-container/90 leading-tight font-mono-metrics" id="terminal-logs">
+</div>
+</div>
+</div>
+</section>
+<!-- Attendee Companion App (35%) -->
+<aside class="w-[35%] h-full flex items-center justify-center p-gutter relative bg-surface-dim/90 backdrop-blur-3xl border-l border-outline-variant/40">
+<div class="relative w-[320px] h-[640px] bg-[#0c0e13] rounded-[3.5rem] border-8 border-surface-container-highest shadow-[0_40px_100px_rgba(0,0,0,0.8)] p-4 overflow-hidden">
+<div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-surface-container-highest rounded-b-2xl z-20"></div>
+<div class="w-full h-full bg-surface-container-lowest rounded-[2.8rem] overflow-hidden flex flex-col">
+<!-- App Header -->
+<div class="p-6 pt-10 bg-gradient-to-b from-primary-container/15 to-transparent">
+<div class="flex justify-between items-center mb-5">
+<div>
+<h2 class="font-headline-md text-primary-container text-xl">My Pass</h2>
+<p class="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest">Sentry Companion</p>
+</div>
+<div class="w-12 h-12 rounded-2xl border-2 border-primary-container/30 overflow-hidden shadow-lg">
+<img alt="Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDN_6Fgnlw0CXG9DZSBvNW2F6NKVipQ-IyjN8lOg_wTAlP39uNto9_Kyyg7-HxqXBAV4XV0-eeMnRmw_kzn78rMe0qmo2-fWnmipXN0x4NTXudj7iwO1NWJ1wvND-j0edYRgK4-AEOLxhyi27ovAUlmabZ2Yc3-DzCHFVmiaJTVN6ooezccVqUyi8PJfPrURwobh0dyfbijVPsC0n9HD8TdCVOWOVFKpjP2K0DzTUFsKJYpV7Lm0KCt8XCZLQAWq4y4icmYdOk2xC7J"/>
+</div>
+</div>
+</div>
+<!-- App Scroll Area -->
+<div class="flex-grow px-5 space-y-5 overflow-y-auto terminal-scroll pb-6">
+<!-- QR Ticket -->
+<div class="bg-surface-container p-6 rounded-3xl border border-primary-container/10 flex flex-col items-center shadow-xl">
+<div class="bg-white p-3 rounded-2xl qr-pulse mb-5">
+<img alt="QR Code" class="w-32 h-32" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDN_6Fgnlw0CXG9DZSBvNW2F6NKVipQ-IyjN8lOg_wTAlP39uNto9_Kyyg7-HxqXBAV4XV0-eeMnRmw_kzn78rMe0qmo2-fWnmipXN0x4NTXudj7iwO1NWJ1wvND-j0edYRgK4-AEOLxhyi27ovAUlmabZ2Yc3-DzCHFVmiaJTVN6ooezccVqUyi8PJfPrURwobh0dyfbijVPsC0n9HD8TdCVOWOVFKpjP2K0DzTUFsKJYpV7Lm0KCt8XCZLQAWq4y4icmYdOk2xC7J"/>
+</div>
+<div class="text-center">
+<h3 class="font-headline-md text-sm mb-1 uppercase tracking-tighter">Champions Finals</h3>
+<p class="text-[10px] font-mono-metrics text-primary-fixed uppercase tracking-[0.2em]">Gate 3 • Row 12 • Seat 42</p>
+</div>
+</div>
+<!-- Mini Map Routing -->
+<div class="bg-surface-container/60 p-5 rounded-3xl border border-outline-variant/40">
+<div class="flex items-center justify-between mb-4">
+<span class="text-[10px] font-bold text-tertiary-container flex items-center gap-2 uppercase tracking-widest">
+<span class="material-symbols-outlined text-sm breathing-icon">directions</span>
+                                Dynamic Route
+                            </span>
+<span class="text-[10px] font-mono-metrics text-on-surface-variant">ETA: 4 MIN</span>
+</div>
+<div class="h-32 bg-surface-container-high rounded-2xl relative overflow-hidden">
+<svg class="w-full h-full" viewbox="0 0 200 120">
+<path d="M20 20 L60 20 L60 80 L140 80 L140 40 L180 40" fill="none" stroke="#3b494b" stroke-linecap="round" stroke-width="4"></path>
+<path class="flow-line" d="M20 20 L60 20 L60 80 L140 80 L140 40 L180 40" fill="none" stroke="#34f885" stroke-linecap="round" stroke-width="4"></path>
+<circle cx="20" cy="20" fill="#34f885" r="4"></circle>
+<circle class="animate-ping" cx="180" cy="40" fill="#00f0ff" r="6"></circle>
+</svg>
+</div>
+</div>
+<!-- AI Chatbot -->
+<div class="bg-secondary-container/20 p-5 rounded-3xl border border-secondary-container/40">
+<div class="flex gap-4 mb-4">
+<div class="w-9 h-9 rounded-xl bg-primary-container flex items-center justify-center shrink-0 shadow-md">
+<span class="material-symbols-outlined text-sm text-on-primary-container" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<div class="bg-surface-container-highest p-4 rounded-tr-2xl rounded-bl-2xl rounded-br-2xl shadow-sm">
+<p class="text-[11px] text-on-surface leading-relaxed">Avoid Gate 2. It's at 98% load. Follow the optimized path to Gate 3 now.</p>
+</div>
+</div>
+<div class="flex gap-2">
+<input class="flex-grow bg-surface-container-lowest border-none text-[11px] rounded-2xl px-5 py-2.5 focus:ring-1 focus:ring-primary-container text-on-surface font-body-sm" placeholder="Message Sentry..." type="text"/>
+<button class="w-10 h-10 bg-primary-container rounded-2xl flex items-center justify-center active:scale-90 transition-transform shadow-lg">
+<span class="material-symbols-outlined text-sm text-on-primary-container">send</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Bottom Nav -->
+<nav class="h-20 flex justify-around items-center border-t border-outline-variant/20 bg-surface-container-lowest px-6">
+<span class="material-symbols-outlined text-primary-container text-2xl" style="font-variation-settings: 'FILL' 1;">confirmation_number</span>
+<span class="material-symbols-outlined text-on-surface-variant text-2xl">map</span>
+<span class="material-symbols-outlined text-on-surface-variant text-2xl">stars</span>
+<span class="material-symbols-outlined text-error text-2xl" style="font-variation-settings: 'FILL' 1;">emergency</span>
+</nav>
+</div>
+</div>
+</aside>
+</main>
+<script>
+    // Glassmorphism Mouse Tracking
+    document.addEventListener('mousemove', e => {
+        const panels = document.querySelectorAll('.glass-panel');
+        panels.forEach(panel => {
+            const rect = panel.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
+            panel.style.setProperty('--mouse-x', `${x}%`);
+            panel.style.setProperty('--mouse-y', `${y}%`);
+        });
+    });
+
+    // Global Jam State
+    let isGate2Jammed = false;
+
+    function toggleJamGate() {
+        isGate2Jammed = !isGate2Jammed;
+        const btn = document.getElementById('jam-gate-btn');
+        const markerRect = document.getElementById('gate-2-rect');
+        const markerText = document.getElementById('gate-2-text');
+        const jamOverlay = document.getElementById('gate-2-jam-overlay');
+        const statusBar = document.getElementById('jam-status-bar');
+        const jamIcon = document.getElementById('jam-icon');
+        const jamBtnText = document.getElementById('jam-text');
+
+        if (isGate2Jammed) {
+            btn.classList.add('bg-error/20', 'border-error/50', 'text-error');
+            btn.classList.remove('text-secondary-fixed');
+            markerRect.classList.add('gate-jammed');
+            markerRect.setAttribute('fill', '#93000a');
+            markerText.setAttribute('fill', '#ffb4ab');
+            markerText.textContent = "GATE 2 (JAMMED)";
+            jamOverlay.style.display = 'block';
+            statusBar.style.width = '100%';
+            jamIcon.textContent = 'warning';
+            jamBtnText.textContent = 'Gate 2 Jammed';
+            
+            // Log to terminal
+            typeWriter("SECURITY: Gate 2 detected as BLOCKED. Rerouting all simulation paths.", terminal);
+        } else {
+            btn.classList.remove('bg-error/20', 'border-error/50', 'text-error');
+            btn.classList.add('text-secondary-fixed');
+            markerRect.classList.remove('gate-jammed');
+            markerRect.setAttribute('fill', '#ffb4ab');
+            markerText.setAttribute('fill', '#ffb4ab');
+            markerText.textContent = "GATE 2 (CRITICAL)";
+            jamOverlay.style.display = 'none';
+            statusBar.style.width = '0%';
+            jamIcon.textContent = 'block';
+            jamBtnText.textContent = 'Jam Gate 2';
+            
+            typeWriter("SYSTEM: Gate 2 blockage cleared. Resuming normal throughput.", terminal);
+        }
+    }
+
+    // Advanced Particle System: Realistic Flow
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('visualizer-container');
+    let particles = [];
+    
+    function resizeCanvas() {
+        canvas.width = container.offsetWidth;
+        canvas.height = container.offsetHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Particle {
+        constructor() {
+            this.reset();
+        }
+        reset() {
+            const angle = Math.random() * Math.PI * 2;
+            const radiusScale = 0.4 + Math.random() * 0.5; 
+            const rx = (canvas.width * 0.4) * radiusScale;
+            const ry = (canvas.height * 0.4) * radiusScale;
+            
+            this.x = (canvas.width * 0.5) + Math.cos(angle) * rx;
+            this.y = (canvas.height * 0.5) + Math.sin(angle) * ry;
+            
+            this.size = Math.random() * 2.5 + 1;
+            this.speed = Math.random() * 0.8 + 0.4;
+            this.alpha = 0;
+            
+            // Define Targets (Gates)
+            const targets = [
+                {x: canvas.width * 0.5, y: canvas.height * 0.12, color: '#34f885', id: 1}, // Gate 1
+                {x: canvas.width * 0.92, y: canvas.height * 0.5, color: '#ffb4ab', id: 2}, // Gate 2
+                {x: canvas.width * 0.5, y: canvas.height * 0.88, color: '#34f885', id: 3}  // Gate 3
+            ];
+            
+            this.chooseTarget(targets);
+        }
+
+        chooseTarget(targets) {
+            const roll = Math.random();
+            // Weighting toward Gate 2 (Critical) if not jammed
+            if (!isGate2Jammed) {
+                if (roll < 0.75) {
+                    this.target = targets[1];
+                } else if (roll < 0.87) {
+                    this.target = targets[0];
+                } else {
+                    this.target = targets[2];
+                }
+            } else {
+                // If jammed, redirect particles destined for Gate 2 to 1 or 3
+                if (roll < 0.5) {
+                    this.target = targets[0];
+                } else {
+                    this.target = targets[2];
+                }
+            }
+            
+            this.color = this.target.color;
+            this.pathOffset = (Math.random() - 0.5) * 30;
+        }
+
+        update() {
+            // Re-evaluate target if current target is Gate 2 and it's jammed
+            if (isGate2Jammed && this.target && this.target.id === 2) {
+                const targets = [
+                    {x: canvas.width * 0.5, y: canvas.height * 0.12, color: '#34f885', id: 1},
+                    {x: canvas.width * 0.92, y: canvas.height * 0.5, color: '#ffb4ab', id: 2},
+                    {x: canvas.width * 0.5, y: canvas.height * 0.88, color: '#34f885', id: 3}
+                ];
+                this.chooseTarget(targets);
+            }
+
+            let dx = this.target.x - this.x;
+            let dy = this.target.y - this.y;
+            
+            const centerX = canvas.width * 0.5;
+            const centerY = canvas.height * 0.5;
+            const distFromCenter = Math.sqrt((this.x - centerX)**2 + (this.y - centerY)**2);
+            const restrictedRadius = canvas.width * 0.15;
+
+            if (distFromCenter < restrictedRadius) {
+                const angleFromCenter = Math.atan2(this.y - centerY, this.x - centerX);
+                this.x += Math.cos(angleFromCenter) * 2;
+                this.y += Math.sin(angleFromCenter) * 2;
+            }
+
+            const angleToTarget = Math.atan2(dy, dx);
+            this.vx = Math.cos(angleToTarget) * this.speed;
+            this.vy = Math.sin(angleToTarget) * this.speed;
+
+            this.x += this.vx;
+            this.y += this.vy;
+            
+            this.x += (Math.random() - 0.5) * 0.5;
+            this.y += (Math.random() - 0.5) * 0.5;
+
+            this.alpha = Math.min(this.alpha + 0.05, 0.8);
+
+            const distToTarget = Math.sqrt(dx*dx + dy*dy);
+            if (distToTarget < 15) {
+                this.reset();
+            }
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.globalAlpha = this.alpha;
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = this.color;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    for (let i = 0; i < 300; i++) {
+        particles.push(new Particle());
+    }
+
+    function animateParticles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            p.update();
+            p.draw();
+        });
+        requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    // Typing Effect Terminal
+    const terminal = document.getElementById('terminal-logs');
+    const messages = [
+        "SENTRY_CORE: Analyzing seating tiers A, B, and C...",
+        "STATUS: High-velocity egress detected toward GATE 2.",
+        "ADVISORY: Central pitch zone marked RESTRICTED - Security enforced.",
+        "TRAFFIC: 75% of crowd trending toward Gate 2 bottleneck.",
+        "ALGORITHM: Calculating walking path delta for Gate 3 rerouting.",
+        "COMPANION_API: Dispatching push alerts to Sector D blocks.",
+        "GATE_LOG: Gate 1 throughput stable. Gate 3 under-utilized.",
+        "CRITICAL: Gate 2 at 98% capacity. Redirecting 1,400 active nodes.",
+        "VISUALIZER: Particle simulation sync'd with thermal cameras.",
+        "SECURITY: Bot-12 deployed to concourse intersection 4.",
+        "SYSTEM: Real-time telemetry optimization achieved 92% efficiency."
+    ];
+    let msgIndex = 0;
+
+    async function typeWriter(text, element) {
+        const p = document.createElement('p');
+        p.className = 'typing-cursor flex gap-2';
+        element.appendChild(p);
+        const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+        const prefix = `<span class="text-on-surface-variant/40 shrink-0">[${time}]</span>`;
+        
+        let i = 0;
+        const fullText = text;
+        
+        return new Promise(resolve => {
+            function type() {
+                if (i < fullText.length) {
+                    p.innerHTML = prefix + `<span class="text-tertiary-container">> ${fullText.substring(0, i + 1)}</span>`;
+                    i++;
+                    setTimeout(type, 15);
+                } else {
+                    p.classList.remove('typing-cursor');
+                    resolve();
+                }
+            }
+            type();
+        });
+    }
+
+    async function startTerminal() {
+        while(true) {
+            await typeWriter(messages[msgIndex], terminal);
+            terminal.scrollTop = terminal.scrollHeight;
+            msgIndex = (msgIndex + 1) % messages.length;
+            if (terminal.children.length > 8) {
+                terminal.removeChild(terminal.firstChild);
+            }
+            await new Promise(r => setTimeout(r, 2500));
+        }
+    }
+    startTerminal();
+</script>
+</body></html>

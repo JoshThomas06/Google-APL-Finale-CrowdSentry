@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SENTRY AI | Logistics Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Outfit:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            background-color: #07090e;
+            color: #e2e2ea;
+            overflow-x: hidden;
+        }
+        .glass-panel {
+            background: rgba(16, 21, 36, 0.5);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(185, 202, 203, 0.1);
+            position: relative;
+        }
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 8px;
+            height: 8px;
+            border-top: 2px solid #00f0ff;
+            border-left: 2px solid #00f0ff;
+        }
+        .grid-overlay {
+            background-image: linear-gradient(rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glow-cyan {
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+        }
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, transparent, rgba(0, 240, 255, 0.2), transparent);
+            position: absolute;
+            animation: scan 4s linear infinite;
+        }
+        @keyframes scan {
+            from { top: 0; }
+            to { top: 100%; }
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#00dbe9",
+                        "surface-container-highest": "#33353b",
+                        "secondary-container": "#44485a",
+                        "on-surface-variant": "#b9cacb",
+                        "tertiary": "#dbffde",
+                        "on-primary-container": "#006970",
+                        "tertiary-fixed": "#62ff96",
+                        "on-secondary-container": "#b3b8cc",
+                        "on-tertiary-container": "#006e35",
+                        "surface-dim": "#111319",
+                        "on-primary-fixed-variant": "#004f54",
+                        "outline-variant": "#3b494b",
+                        "inverse-primary": "#006970",
+                        "on-tertiary": "#003918",
+                        "background": "#111319",
+                        "primary-container": "#00f0ff",
+                        "primary-fixed-dim": "#00dbe9",
+                        "on-secondary-fixed": "#161b2a",
+                        "error-container": "#93000a",
+                        "surface-container-lowest": "#0c0e13",
+                        "on-primary-fixed": "#002022",
+                        "on-background": "#e2e2ea",
+                        "surface-variant": "#33353b",
+                        "outline": "#849495",
+                        "on-tertiary-fixed": "#00210b",
+                        "error": "#ffb4ab",
+                        "surface": "#111319",
+                        "surface-container-high": "#282a30",
+                        "primary": "#dbfcff",
+                        "tertiary-fixed-dim": "#00e475",
+                        "surface-container": "#1d2025",
+                        "on-secondary-fixed-variant": "#414657",
+                        "tertiary-container": "#34f885",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed": "#dee1f7",
+                        "secondary-fixed-dim": "#c1c6db",
+                        "on-surface": "#e2e2ea",
+                        "inverse-surface": "#e2e2ea",
+                        "on-secondary": "#2b3040",
+                        "primary-fixed": "#7df4ff",
+                        "on-primary": "#00363a",
+                        "surface-bright": "#37393f",
+                        "on-error": "#690005",
+                        "surface-container-low": "#191c21",
+                        "secondary": "#c1c6db",
+                        "inverse-on-surface": "#2e3036",
+                        "on-tertiary-fixed-variant": "#005226"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "panel-gap": "12px",
+                        "gutter": "24px",
+                        "margin-desktop": "48px",
+                        "unit": "4px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "mono-metrics": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "body-base": ["Inter"],
+                        "headline-md": ["Outfit"],
+                        "display-lg-mobile": ["Outfit"],
+                        "display-lg": ["Outfit"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "400"}],
+                        "mono-metrics": ["20px", {"lineHeight": "24px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                        "body-base": ["16px", {"lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                        "display-lg-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen grid-overlay">
+<!-- TopNavBar -->
+<header class="w-full top-0 sticky z-50 bg-surface-container/50 backdrop-blur-xl border-b border-outline-variant/20 shadow-[0_0_20px_rgba(0,240,255,0.1)] flex justify-between items-center px-margin-desktop h-16">
+<div class="flex items-center gap-8">
+<span class="font-display-lg text-headline-md text-primary-container drop-shadow-[0_0_8px_#00f0ff]">SENTRY AI</span>
+<nav class="hidden md:flex gap-6">
+<a class="text-on-surface-variant font-medium hover:text-primary-fixed transition-colors duration-300" href="#">TACTICAL</a>
+<a class="text-on-surface-variant font-medium hover:text-primary-fixed transition-colors duration-300" href="#">TELEMETRY</a>
+<a class="text-primary-container border-b-2 border-primary-container font-bold pb-1 transition-colors duration-300" href="#">LOGISTICS</a>
+<a class="text-on-surface-variant font-medium hover:text-primary-fixed transition-colors duration-300" href="#">ALERTS</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary-container active:scale-95 transition-all">settings</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary-container active:scale-95 transition-all">notifications_active</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary-container active:scale-95 transition-all">account_circle</button>
+</div>
+</header>
+<div class="flex h-[calc(100vh-64px)] overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full w-64 left-0 sticky bg-surface-dim/80 backdrop-blur-2xl border-r border-outline-variant/30 shadow-2xl">
+<div class="p-6 border-b border-outline-variant/10">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full border border-primary-container/50 bg-surface-container overflow-hidden">
+<img alt="Operator" class="w-full h-full object-cover grayscale brightness-75 contrast-125" data-alt="A cinematic close-up of a professional security operator wearing a high-tech communication headset. The lighting is low-key with intense blue and cyan backlight reflections on the operator's face, creating a dramatic command center atmosphere. The background is a blurred array of glowing computer terminals and telemetry data screens in a sophisticated obsidian and slate blue environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPplXQrSsjYdpHRfFnq4IG6WAAqERyp16kqCRcWWj7I-_jGhDp7HF_CeBHHI7FzRFweA8Ly4NY94uhrkMUImJ1eAHQnqk9wn0P0MbEieGiPy-ExdJEXT5p66fHk58x7YgdAPn8VTzpjeV9MWcgofzz_RImarFY_T9D65y3iEw5S3neOxKHvpj0dNvXwlFitI310Q2SwiiQEJNffa7vcLTvMHrLuCFLILOOXqzwyHpeO8KxODxsxRArGKY2RC4Luz8Tfc9qDpq7WXSA"/>
+</div>
+<div>
+<div class="font-body-sm text-body-sm uppercase tracking-widest text-primary">OPERATOR 01</div>
+<div class="text-[10px] text-on-surface-variant uppercase tracking-tighter">Sector A-7 Deployment</div>
+</div>
+</div>
+</div>
+<nav class="flex-1 py-4">
+<div class="text-on-surface-variant p-4 flex items-center gap-3 hover:bg-surface-container-high transition-all cursor-pointer">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-sm text-body-sm uppercase tracking-widest">Overview</span>
+</div>
+<div class="text-on-surface-variant p-4 flex items-center gap-3 hover:bg-surface-container-high transition-all cursor-pointer">
+<span class="material-symbols-outlined">dataset</span>
+<span class="font-body-sm text-body-sm uppercase tracking-widest">Heatmap</span>
+</div>
+<div class="bg-primary-container/10 text-primary-container border-l-4 border-primary-container p-4 flex items-center gap-3 transition-all cursor-pointer">
+<span class="material-symbols-outlined">precision_manufacturing</span>
+<span class="font-body-sm text-body-sm uppercase tracking-widest">Drones</span>
+</div>
+<div class="text-on-surface-variant p-4 flex items-center gap-3 hover:bg-surface-container-high transition-all cursor-pointer">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-body-sm text-body-sm uppercase tracking-widest">Staff</span>
+</div>
+<div class="text-on-surface-variant p-4 flex items-center gap-3 hover:bg-surface-container-high transition-all cursor-pointer">
+<span class="material-symbols-outlined">history</span>
+<span class="font-body-sm text-body-sm uppercase tracking-widest">Archive</span>
+</div>
+</nav>
+<div class="p-6">
+<button class="w-full py-3 bg-primary-container text-on-primary-fixed font-bold text-label-caps tracking-widest uppercase rounded shadow-[0_0_15px_rgba(0,240,255,0.4)] hover:brightness-110 active:scale-95 transition-all">
+                    DEPLOYSQUAD
+                </button>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="flex-1 relative overflow-hidden flex flex-col md:flex-row">
+<!-- Map View (Blueprint) -->
+<div class="flex-1 relative bg-surface-container-lowest overflow-hidden">
+<div class="scanline z-10"></div>
+<!-- Interactive Map Area -->
+<div class="absolute inset-0 z-0 opacity-40">
+<img alt="Stadium Map" class="w-full h-full object-cover" data-alt="A highly detailed architectural blueprint of a modern sports stadium, rendered in a futuristic technical style with thin neon cyan and electric blue lines against a deep obsidian black background. The map features complex structural patterns, designated sectors, and glowing geometric indicators representing deployment points. The aesthetic is clean and high-contrast, resembling a digital command and control interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAafVxQls9SRg-NM_6LynFDaDmJ6gkK9pjiDPV-9YAIJpMPbNUpcXGksBjnlt5rSrNh3eqOw0YczTwDvuGJky1WihvCiUpQpa4GrJjtq61VmbF9TihMjjncnWTs_RU5ib4_cA5nLJ7-e9ky2oswXTnvXf8qufT5PXZHHxrSvCnroOKxCOhP5jwsxLfq5Kt1Sxki-egd31azWpewVdY48ft7wYcjfB9q4tXpz3r0EqWqdYBwWMMXNPR-3J3HWvCSX0Gmfw1AmeSwDZuz"/>
+</div>
+<!-- Deployment Icons -->
+<div class="absolute inset-0 pointer-events-none">
+<!-- Drone Alpha -->
+<div class="absolute top-1/4 left-1/3 animate-pulse">
+<div class="bg-primary-container w-4 h-4 rounded-full shadow-[0_0_12px_#00f0ff]"></div>
+<div class="absolute top-6 -left-4 font-label-caps text-[10px] text-primary-container whitespace-nowrap bg-surface-dim/80 px-2 py-1 border border-primary-container/30">DRONE_ALPHA [MOVING]</div>
+</div>
+<!-- Medic Team 04 -->
+<div class="absolute bottom-1/3 right-1/4">
+<div class="bg-tertiary-container w-4 h-4 rounded-sm rotate-45 shadow-[0_0_12px_#34f885]"></div>
+<div class="absolute top-6 -left-4 font-label-caps text-[10px] text-tertiary-container whitespace-nowrap bg-surface-dim/80 px-2 py-1 border border-tertiary-container/30">MEDIC_04 [STATIONARY]</div>
+</div>
+<!-- Security Unit 09 -->
+<div class="absolute top-1/2 right-1/2">
+<div class="bg-secondary-fixed-dim w-4 h-4 rounded-full border-2 border-primary shadow-[0_0_12px_#c1c6db]"></div>
+<div class="absolute top-6 -left-4 font-label-caps text-[10px] text-secondary-fixed-dim whitespace-nowrap bg-surface-dim/80 px-2 py-1 border border-secondary-fixed-dim/30">SEC_UNIT_09 [ACTIVE]</div>
+</div>
+</div>
+<!-- Overlay Legend -->
+<div class="absolute bottom-6 left-6 flex gap-4">
+<div class="glass-panel p-3 flex flex-col gap-2">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 bg-primary-container rounded-full"></span>
+<span class="font-label-caps text-[10px] text-on-surface-variant">DRONES (12 ACTIVE)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 bg-tertiary-container rounded-full"></span>
+<span class="font-label-caps text-[10px] text-on-surface-variant">MEDICS (08 READY)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 bg-secondary-fixed-dim rounded-full"></span>
+<span class="font-label-caps text-[10px] text-on-surface-variant">SECURITY (45 DEPLOYED)</span>
+</div>
+</div>
+</div>
+<!-- Active Alert -->
+<div class="absolute top-6 left-6 animate-bounce">
+<div class="bg-error-container/80 backdrop-blur-md border border-error/50 p-3 flex items-center gap-3">
+<span class="material-symbols-outlined text-error">warning</span>
+<span class="font-label-caps text-error tracking-wider">SECTOR B-2: CROWD SURGE DETECTED</span>
+</div>
+</div>
+</div>
+<!-- Right Logistics Panel -->
+<div class="w-full md:w-96 bg-surface-container-low border-l border-outline-variant/30 flex flex-col">
+<!-- Resource Allocation Section -->
+<section class="p-6 border-b border-outline-variant/20">
+<h2 class="font-headline-md text-headline-md text-primary-container mb-6 flex items-center gap-2 uppercase tracking-widest">
+<span class="material-symbols-outlined">inventory_2</span>
+                        RESOURCE ALLOCATION
+                    </h2>
+<div class="space-y-6">
+<!-- Battery Levels -->
+<div>
+<div class="flex justify-between items-end mb-2">
+<span class="font-label-caps text-[10px] text-on-surface-variant uppercase">FLIGHT BATTERY (AVG)</span>
+<span class="font-mono-metrics text-mono-metrics text-primary-container glow-cyan">84%</span>
+</div>
+<div class="h-1 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-[84%] shadow-[0_0_8px_#00f0ff]"></div>
+</div>
+</div>
+<!-- Response Time -->
+<div>
+<div class="flex justify-between items-end mb-2">
+<span class="font-label-caps text-[10px] text-on-surface-variant uppercase">EST. RESPONSE TIME</span>
+<span class="font-mono-metrics text-mono-metrics text-tertiary-container">2:45m</span>
+</div>
+<div class="h-1 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-tertiary-container w-[40%] shadow-[0_0_8px_#34f885]"></div>
+</div>
+</div>
+<!-- Personnel Availability -->
+<div>
+<div class="flex justify-between items-end mb-2">
+<span class="font-label-caps text-[10px] text-on-surface-variant uppercase">STAFF AVAILABILITY</span>
+<span class="font-mono-metrics text-mono-metrics text-secondary-fixed-dim">92%</span>
+</div>
+<div class="h-1 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-secondary-fixed-dim w-[92%] shadow-[0_0_8px_#c1c6db]"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Task Queue -->
+<section class="flex-1 overflow-y-auto p-6">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-4 uppercase tracking-[0.2em] border-b border-outline-variant/20 pb-2">ACTIVE DEPLOYMENTS</h3>
+<div class="space-y-4">
+<!-- Task Item -->
+<div class="glass-panel p-4 group cursor-pointer hover:bg-surface-container-high transition-all">
+<div class="flex justify-between items-start mb-2">
+<span class="font-body-sm text-body-sm font-bold text-primary">Sector B-2 Reinforcement</span>
+<span class="text-[10px] px-2 py-0.5 bg-primary-container/20 text-primary-container border border-primary-container/30">PRIORITY: HIGH</span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">engineering</span>
+<span class="text-[11px] font-mono tracking-tight uppercase">UNIT_09, UNIT_12 • 4M REMAINING</span>
+</div>
+</div>
+<!-- Task Item -->
+<div class="glass-panel p-4 group cursor-pointer hover:bg-surface-container-high transition-all">
+<div class="flex justify-between items-start mb-2">
+<span class="font-body-sm text-body-sm font-bold text-primary">Gate 1 Maintenance</span>
+<span class="text-[10px] px-2 py-0.5 bg-secondary-container/20 text-on-surface-variant border border-outline-variant/30">PRIORITY: MED</span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">construction</span>
+<span class="text-[11px] font-mono tracking-tight uppercase">TECH_TEAM_A • 12M REMAINING</span>
+</div>
+</div>
+<!-- Task Item -->
+<div class="glass-panel p-4 group cursor-pointer hover:bg-surface-container-high transition-all">
+<div class="flex justify-between items-start mb-2">
+<span class="font-body-sm text-body-sm font-bold text-primary">VIP Escort [North Box]</span>
+<span class="text-[10px] px-2 py-0.5 bg-tertiary-container/20 text-tertiary-container border border-tertiary-container/30">PRIORITY: HIGH</span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+<span class="text-[11px] font-mono tracking-tight uppercase">PROTECTION_UNIT • IN PROGRESS</span>
+</div>
+</div>
+<!-- Task Item -->
+<div class="glass-panel p-4 group cursor-pointer hover:bg-surface-container-high transition-all opacity-60">
+<div class="flex justify-between items-start mb-2">
+<span class="font-body-sm text-body-sm font-bold text-primary">Refuel Cycle: Drone Hub 4</span>
+<span class="text-[10px] px-2 py-0.5 bg-surface-container-highest text-on-surface-variant border border-outline-variant/20">PRIORITY: LOW</span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">battery_charging_full</span>
+<span class="text-[11px] font-mono tracking-tight uppercase">AUTO_HUB_04 • QUEUED</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Footer Console -->
+<div class="p-4 bg-surface-dim border-t border-outline-variant/30 text-[10px] font-mono text-primary/40 flex flex-col gap-1">
+<div class="flex justify-between">
+<span>SYSTEM_LOG::LOGISTICS_THREAD</span>
+<span>v.4.92.1-STABLE</span>
+</div>
+<div>&gt; UPDATING TELEMETRY PACKETS... OK</div>
+<div>&gt; SYNCING STAFF LOCATIONS... OK</div>
+</div>
+</div>
+</main>
+</div>
+<!-- BottomNavBar (Mobile Only) -->
+<footer class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 bg-surface-container-lowest/90 backdrop-blur-md border-t border-primary-container/20 shadow-[0_-5px_25px_rgba(0,240,255,0.15)] rounded-t-full">
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-3 hover:text-primary-fixed-dim transition-all active:scale-90">
+<span class="material-symbols-outlined">confirmation_number</span>
+<span class="font-label-caps text-label-caps">Tickets</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full p-3 shadow-[0_0_15px_#00f0ff] active:scale-90">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-caps text-label-caps">Map</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-3 hover:text-primary-fixed-dim transition-all active:scale-90">
+<span class="material-symbols-outlined">stars</span>
+<span class="font-label-caps text-label-caps">Perks</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-3 hover:text-primary-fixed-dim transition-all active:scale-90">
+<span class="material-symbols-outlined">emergency</span>
+<span class="font-label-caps text-label-caps">SOS</span>
+</button>
+</footer>
+<script>
+        // Simple micro-interaction for map markers
+        document.querySelectorAll('.animate-pulse').forEach(marker => {
+            marker.addEventListener('mouseenter', () => {
+                marker.style.transform = 'scale(1.2)';
+                marker.style.transition = 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            });
+            marker.addEventListener('mouseleave', () => {
+                marker.style.transform = 'scale(1)';
+            });
+        });
+
+        // Simulating telemetry data changes
+        setInterval(() => {
+            const metrics = document.querySelectorAll('.glow-cyan');
+            metrics.forEach(m => {
+                const current = parseInt(m.innerText);
+                const variance = Math.floor(Math.random() * 3) - 1;
+                m.innerText = (current + variance) + '%';
+            });
+        }, 5000);
+    </script>
+</body></html>
