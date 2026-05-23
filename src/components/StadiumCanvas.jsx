@@ -1,42 +1,49 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 
-export default function StadiumCanvas({ 
-  simulationState, // 'idle', 'running', 'paused', 'gate2-blocked', 'storm-alert', 'rerouted'
-  onStatsUpdate // callback for throttled stats update
+export default function StadiumCanvas({
+  simulationState,
+  onStatsUpdate
 }) {
   const canvasRef = useRef(null);
+  const containerRef = useRef(null);
   const particlesRef = useRef([]);
   const animationFrameIdRef = useRef(null);
   const statsIntervalRef = useRef(null);
-  
-  // Track simulation state inside a ref to access in canvas render loop instantly
   const stateRef = useRef(simulationState);
+
   useEffect(() => {
     stateRef.current = simulationState;
   }, [simulationState]);
 
-  // Initializing 450 particles
-  const initParticles = () => {
-    const list = [];
-    const stands = [
-      { name: 'North Stand', color: 'rgba(124, 77, 255, 0.65)', spawnX: 400, spawnY: 100, radius: 60, initialGate: 'Gate1' }, // Indigo
-      { name: 'East Stand', color: 'rgba(0, 230, 118, 0.65)', spawnX: 580, spawnY: 250, radius: 50, initialGate: 'Gate2' },  // Grass Emerald
-      { name: 'South Stand', color: 'rgba(255, 140, 0, 0.65)', spawnX: 400, spawnY: 380, radius: 60, initialGate: 'Gate2' }, // Sunset Gold (Orange)
-      { name: 'West Stand', color: 'rgba(255, 46, 99, 0.65)', spawnX: 220, spawnY: 250, radius: 50, initialGate: 'Gate5' }   // Deep Ruby (Red)
-    ];
+  // Gate layout is expressed as FRACTIONS of canvas width/height
+  // so they scale with the container
+  const getGateCoords = (w, h) => ({
+    Gate1: { x: w * 0.5, y: h * 0.08 },   // Top
+    Gate2: { x: w * 0.88, y: h * 0.5 },   // Right (Critical)
+    Gate3: { x: w * 0.5, y: h * 0.92 },   // Bottom (Adjacent)
+    Gate5: { x: w * 0.12, y: h * 0.5 }    // Left
+  });
 
-    // Distribute particles across sectors
-    for (let i = 0; i < 450; i++) {
+  // Stand spawn points as fractions
+  const getStands = (w, h) => [
+    { name: 'North Stand', color: 'rgba(124, 77, 255, 0.7)', spawnX: w * 0.5, spawnY: h * 0.18, radius: w * 0.08, initialGate: 'Gate1' },
+    { name: 'East Stand', color: 'rgba(0, 230, 118, 0.7)', spawnX: w * 0.75, spawnY: h * 0.5, radius: w * 0.065, initialGate: 'Gate2' },
+    { name: 'South Stand', color: 'rgba(255, 140, 0, 0.7)', spawnX: w * 0.5, spawnY: h * 0.76, radius: w * 0.08, initialGate: 'Gate2' },
+    { name: 'West Stand', color: 'rgba(255, 46, 99, 0.7)', spawnX: w * 0.25, spawnY: h * 0.5, radius: w * 0.065, initialGate: 'Gate5' }
+  ];
+
+  const initParticles = (w, h) => {
+    const stands = getStands(w, h);
+    const list = [];
+
+    for (let i = 0; i < 400; i++) {
       const standIdx = i % stands.length;
       const stand = stands[standIdx];
-      
-      // Distribute randomly in a circle around spawn coordinates
       const angle = Math.random() * Math.PI * 2;
       const r = Math.random() * stand.radius;
       const px = stand.spawnX + Math.cos(angle) * r;
       const py = stand.spawnY + Math.sin(angle) * r;
 
-      // South stand splits 80% Gate 2 (congested) and 20% Gate 3 initially
       let gate = stand.initialGate;
       if (stand.name === 'South Stand') {
         gate = Math.random() < 0.8 ? 'Gate2' : 'Gate3';
@@ -44,16 +51,15 @@ export default function StadiumCanvas({
 
       list.push({
         id: i,
-        x: px,
-        y: py,
-        vx: 0,
-        vy: 0,
+        x: px, y: py,
+        vx: 0, vy: 0,
         stand: stand.name,
         targetGate: gate,
         originalGate: gate,
-        speed: 1.0 + Math.random() * 0.4,
-        size: 2.2 + Math.random() * 1.2,
-        densityColor: '#00e676', // Green default
+        speed: 0.8 + Math.random() * 0.5,
+        size: 1.8 + Math.random() * 1.0,
+        color: stand.color,
+        densityColor: '#00e676',
         exited: false,
         stuckTicks: 0
       });
@@ -61,377 +67,280 @@ export default function StadiumCanvas({
     particlesRef.current = list;
   };
 
-  // Define exit gate center coordinates
-  const gateCoords = {
-    Gate1: { x: 400, y: 40 },   // Top Gate
-    Gate2: { x: 670, y: 250 },  // Right Gate (Bottleneck Segment)
-    Gate3: { x: 400, y: 460 },  // Bottom Gate
-    Gate5: { x: 130, y: 250 }   // Left Gate
-  };
-
-  // Reset / Initial Setup
-  useEffect(() => {
-    initParticles();
-    
-    // Throttled stats loop running every 500ms (PRD Sec 4.A)
-    statsIntervalRef.current = setInterval(() => {
-      if (stateRef.current === 'idle') return;
-
-      const activeParticles = particlesRef.current.filter(p => !p.exited);
-      const totalCount = particlesRef.current.length;
-      const exitedCount = totalCount - activeParticles.length;
-
-      // Count gate-specific densities
-      const gateLoads = { Gate1: 0, Gate2: 0, Gate3: 0, Gate5: 0 };
-      let criticalDensityCount = 0;
-
-      activeParticles.forEach(p => {
-        // Calculate distance to current target gate
-        const target = gateCoords[p.targetGate];
-        const dist = Math.hypot(target.x - p.x, target.y - p.y);
-        
-        // If close to their exit gate, add to density metric
-        if (dist < 100) {
-          gateLoads[p.targetGate]++;
-        }
-
-        // Count particles in high density/bottleneck state
-        if (p.densityColor === '#ff2e63') {
-          criticalDensityCount++;
-        }
-      });
-
-      // Calculate Congestion Risk Index, Comfort, and Walking Distance (PRD Sec 4 & 7)
-      let congestionRisk = 0;
-      let fanComfortScore = 98;
-      let extraDistance = 0.0;
-
-      if (stateRef.current === 'gate2-blocked') {
-        congestionRisk = Math.min(96, 75 + Math.floor((gateLoads.Gate2 / 70) * 20));
-        fanComfortScore = 90;
-        extraDistance = 0.5;
-      } else if (stateRef.current === 'storm-alert') {
-        congestionRisk = 92;
-        fanComfortScore = 85;
-        extraDistance = 0.0;
-      } else if (stateRef.current === 'rerouted') {
-        // Cooling down
-        congestionRisk = Math.max(12, Math.floor(45 - (exitedCount / totalCount) * 35));
-        fanComfortScore = 90;
-        extraDistance = 1.2;
-      } else if (stateRef.current === 'running') {
-        congestionRisk = 18;
-        fanComfortScore = 98;
-        extraDistance = 0.0;
-      }
-
-      // Egress rate (exited per min)
-      let egressRate = 0;
-      if (stateRef.current === 'running') egressRate = 185;
-      else if (stateRef.current === 'gate2-blocked') egressRate = 18; // collapsed
-      else if (stateRef.current === 'storm-alert') egressRate = 8; // near stampede
-      else if (stateRef.current === 'rerouted') egressRate = 220; // super efficient flow
-
-      onStatsUpdate({
-        exitedCount,
-        totalCount,
-        congestionRisk,
-        egressRate,
-        fanComfortScore,
-        extraDistance,
-        gateLoads: {
-          Gate1: Math.min(100, Math.floor((gateLoads.Gate1 / 80) * 100)),
-          Gate2: stateRef.current === 'gate2-blocked' ? 98 : Math.min(100, Math.floor((gateLoads.Gate2 / 80) * 100)),
-          Gate3: Math.min(100, Math.floor((gateLoads.Gate3 / 80) * 100)),
-          Gate5: Math.min(100, Math.floor((gateLoads.Gate5 / 80) * 100))
-        }
-      });
-    }, 500);
-
-    return () => {
-      if (statsIntervalRef.current) clearInterval(statsIntervalRef.current);
-    };
-  }, []);
-
-  // Watch simulation state transitions and update particle routing dynamically (PRD Sec 4 PALD)
+  // Re-route particles when state changes
   useEffect(() => {
     const list = particlesRef.current;
-    
     if (simulationState === 'rerouted') {
-      // Reallocation engine: route South stand reallocations to adjacent Gate 3 (PALD)
       list.forEach(p => {
         if (p.originalGate === 'Gate2') {
           if (p.stand === 'South Stand') {
-            p.targetGate = 'Gate3'; // Adjacent Gate 3
+            p.targetGate = 'Gate3';
           } else if (p.stand === 'East Stand') {
-            // East Stand splits between adjacent Gate 1 and Gate 3
             p.targetGate = Math.random() < 0.5 ? 'Gate1' : 'Gate3';
           }
         }
       });
     } else if (simulationState === 'idle' || simulationState === 'running') {
-      // Reset all gates to original configuration
-      list.forEach(p => {
-        p.targetGate = p.originalGate;
-      });
+      list.forEach(p => { p.targetGate = p.originalGate; });
     }
   }, [simulationState]);
 
-  // Main high-speed rendering loop using requestAnimationFrame (PRD Sec 4.A)
+  useEffect(() => {
+    if (simulationState === 'idle') {
+      const canvas = canvasRef.current;
+      if (canvas) initParticles(canvas.width, canvas.height);
+    }
+  }, [simulationState]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
     const ctx = canvas.getContext('2d');
-    
-    const width = 800;
-    const height = 500;
-    
+
+    // Responsive resize
+    const resize = () => {
+      canvas.width = container.offsetWidth;
+      canvas.height = container.offsetHeight;
+      initParticles(canvas.width, canvas.height);
+    };
+
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(container);
+
+    // Stats throttle
+    statsIntervalRef.current = setInterval(() => {
+      if (stateRef.current === 'idle') return;
+      const list = particlesRef.current;
+      const activeParticles = list.filter(p => !p.exited);
+      const totalCount = list.length;
+      const exitedCount = totalCount - activeParticles.length;
+
+      let congestionRisk = 0, fanComfortScore = 98, extraDistance = 0.0;
+      if (stateRef.current === 'gate2-blocked') { congestionRisk = Math.min(96, 75 + Math.random() * 20); fanComfortScore = 90; extraDistance = 0.5; }
+      else if (stateRef.current === 'storm-alert') { congestionRisk = 92; fanComfortScore = 85; extraDistance = 0.0; }
+      else if (stateRef.current === 'rerouted') { congestionRisk = Math.max(12, Math.floor(45 - (exitedCount / totalCount) * 35)); fanComfortScore = 90; extraDistance = 1.2; }
+      else if (stateRef.current === 'running') { congestionRisk = 18; fanComfortScore = 98; extraDistance = 0.0; }
+
+      let egressRate = 0;
+      if (stateRef.current === 'running') egressRate = 185;
+      else if (stateRef.current === 'gate2-blocked') egressRate = 18;
+      else if (stateRef.current === 'storm-alert') egressRate = 8;
+      else if (stateRef.current === 'rerouted') egressRate = 220;
+
+      onStatsUpdate({ exitedCount, totalCount, congestionRisk, egressRate, fanComfortScore, extraDistance, gateLoads: { Gate1: 20, Gate2: stateRef.current === 'gate2-blocked' ? 98 : 45, Gate3: 30, Gate5: 15 } });
+    }, 500);
+
+    // ── RENDER LOOP ──
     const render = () => {
-      // 1. High-fidelity glowing particle trails (PRD Sec 4.B)
-      ctx.fillStyle = 'rgba(7, 9, 14, 0.18)'; // transparent overlay
-      ctx.fillRect(0, 0, width, height);
+      const w = canvas.width;
+      const h = canvas.height;
+      const gateCoords = getGateCoords(w, h);
 
-      // 2. Draw Stadium Cricket Oval Overlay (Subtle Cricket Theme)
-      // Inner Circle (dashed field circle)
-      ctx.strokeStyle = 'rgba(0, 230, 118, 0.08)';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([8, 12]);
-      ctx.beginPath();
-      ctx.ellipse(400, 250, 180, 140, 0, 0, Math.PI * 2);
-      ctx.stroke();
+      // Glowing tail effect
+      ctx.fillStyle = 'rgba(7, 9, 14, 0.18)';
+      ctx.fillRect(0, 0, w, h);
 
-      // Outer Boundary line
+      // Stadium oval boundary
       ctx.strokeStyle = 'rgba(0, 230, 118, 0.15)';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1.5;
       ctx.setLineDash([]);
       ctx.beginPath();
-      ctx.ellipse(400, 250, 250, 190, 0, 0, Math.PI * 2);
+      ctx.ellipse(w * 0.5, h * 0.5, w * 0.42, h * 0.42, 0, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Draw Seating Stand labels in corners
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-      ctx.font = '700 10px "Outfit", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('NORTH PAVILION STAND', 400, 140);
-      ctx.fillText('EAST STAND SECTOR', 550, 310);
-      ctx.fillText('SOUTH PAVILION STAND', 400, 360);
-      ctx.fillText('WEST STAND SECTOR', 250, 310);
-
-      // Pitch in center (Tan rectangle)
-      ctx.fillStyle = 'rgba(210, 180, 140, 0.12)';
-      ctx.fillRect(385, 235, 30, 30);
-      ctx.strokeStyle = 'rgba(210, 180, 140, 0.2)';
+      // Inner dashed field circle
+      ctx.strokeStyle = 'rgba(0, 230, 118, 0.07)';
       ctx.lineWidth = 1;
-      ctx.strokeRect(385, 235, 30, 30);
+      ctx.setLineDash([6, 10]);
+      ctx.beginPath();
+      ctx.ellipse(w * 0.5, h * 0.5, w * 0.28, h * 0.28, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
 
-      // 2.5. Draw Dynamic Plaza Buffer Zone (PRD Sec 11.B)
+      // Stand labels
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.font = `700 ${Math.max(8, w * 0.012)}px "Outfit", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('NORTH PAVILION STAND', w * 0.5, h * 0.24);
+      ctx.fillText('EAST STAND SECTOR', w * 0.72, h * 0.6);
+      ctx.fillText('SOUTH PAVILION STAND', w * 0.5, h * 0.72);
+      ctx.fillText('WEST STAND SECTOR', w * 0.28, h * 0.6);
+
+      // Central Pitch rectangle
+      const pitchW = w * 0.07, pitchH = h * 0.24;
+      ctx.fillStyle = 'rgba(210, 180, 140, 0.1)';
+      ctx.fillRect(w * 0.5 - pitchW / 2, h * 0.5 - pitchH / 2, pitchW, pitchH);
+      ctx.strokeStyle = 'rgba(210, 180, 140, 0.18)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(w * 0.5 - pitchW / 2, h * 0.5 - pitchH / 2, pitchW, pitchH);
+
+      // Plaza Buffer Zone (storm)
       if (stateRef.current === 'storm-alert') {
         ctx.save();
         ctx.fillStyle = 'rgba(255, 140, 0, 0.04)';
-        ctx.strokeStyle = 'rgba(255, 140, 0, 0.45)';
+        ctx.strokeStyle = 'rgba(255, 140, 0, 0.5)';
         ctx.lineWidth = 1.5;
         ctx.setLineDash([4, 6]);
         ctx.beginPath();
-        ctx.arc(400, 310, 45, 0, Math.PI * 2);
+        ctx.arc(w * 0.5, h * 0.62, Math.min(w, h) * 0.09, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
         ctx.restore();
-
-        // Label for Buffer Zone
         ctx.fillStyle = '#ff8c00';
-        ctx.font = '700 8px "Fira Code", monospace';
+        ctx.font = `700 ${Math.max(7, w * 0.011)}px "Fira Code", monospace`;
         ctx.textAlign = 'center';
-        ctx.fillText('SOUTH PLAZA BUFFER ZONE (HOLD)', 400, 324);
+        ctx.fillText('SOUTH PLAZA BUFFER ZONE', w * 0.5, h * 0.62 + Math.min(w, h) * 0.09 + 12);
       }
 
-      // 3. Draw exit gate rectangular segments (cyan/green status outlines)
-      Object.keys(gateCoords).forEach(gateKey => {
-        const coord = gateCoords[gateKey];
-        const isBlocked = gateKey === 'Gate2' && stateRef.current === 'gate2-blocked';
-        
+      // Gate rectangles
+      Object.keys(gateCoords).forEach(gKey => {
+        const coord = gateCoords[gKey];
+        const isBlocked = gKey === 'Gate2' && stateRef.current === 'gate2-blocked';
         ctx.save();
         if (isBlocked) {
-          ctx.strokeStyle = 'rgba(255, 46, 99, 0.7)';
-          ctx.fillStyle = 'rgba(255, 46, 99, 0.2)';
+          ctx.strokeStyle = 'rgba(255, 46, 99, 0.8)';
+          ctx.fillStyle = 'rgba(255, 46, 99, 0.18)';
           ctx.shadowColor = 'rgba(255, 46, 99, 0.5)';
         } else {
-          ctx.strokeStyle = 'rgba(0, 240, 255, 0.5)';
+          ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
           ctx.fillStyle = 'rgba(0, 240, 255, 0.08)';
           ctx.shadowColor = 'rgba(0, 240, 255, 0.3)';
         }
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur = 10;
         ctx.lineWidth = 2;
 
-        // Draw exit gateway segments
+        const gW = w * 0.04, gH = h * 0.04;
         ctx.beginPath();
-        if (gateKey === 'Gate1' || gateKey === 'Gate3') {
-          ctx.rect(coord.x - 25, coord.y - 8, 50, 16);
+        if (gKey === 'Gate1' || gKey === 'Gate3') {
+          ctx.rect(coord.x - gW * 1.5, coord.y - gH * 0.4, gW * 3, gH * 0.8);
         } else {
-          ctx.rect(coord.x - 8, coord.y - 25, 16, 50);
+          ctx.rect(coord.x - gW * 0.4, coord.y - gH * 1.5, gW * 0.8, gH * 3);
         }
         ctx.fill();
         ctx.stroke();
         ctx.restore();
 
-        // Labeled text above gates
         ctx.fillStyle = isBlocked ? '#ff2e63' : '#00f0ff';
-        ctx.font = '700 9px "Fira Code", monospace';
+        ctx.font = `700 ${Math.max(8, w * 0.011)}px "Fira Code", monospace`;
         ctx.textAlign = 'center';
-        
-        if (gateKey === 'Gate1') ctx.fillText('GATE 1 [N]', coord.x, coord.y - 14);
-        else if (gateKey === 'Gate2') ctx.fillText(isBlocked ? 'GATE 2 [BLOCKED]' : 'GATE 2 [S]', coord.x + 35, coord.y + 3);
-        else if (gateKey === 'Gate3') ctx.fillText('GATE 3 [S]', coord.x, coord.y + 22);
-        else if (gateKey === 'Gate5') ctx.fillText('GATE 5 [W]', coord.x - 35, coord.y + 3);
+        if (gKey === 'Gate1') ctx.fillText('GATE 1 [N]', coord.x, coord.y - gH * 0.8);
+        else if (gKey === 'Gate2') ctx.fillText(isBlocked ? 'GATE 2 [BLOCKED]' : 'GATE 2', coord.x + gW * 2, coord.y);
+        else if (gKey === 'Gate3') ctx.fillText('GATE 3 [ADJ]', coord.x, coord.y + gH * 1.2);
+        else if (gKey === 'Gate5') ctx.fillText('GATE 5 [W]', coord.x - gW * 2, coord.y);
       });
 
-      // 4. Update Particle Physics (Only if running, gate2-blocked, storm-alert, or rerouted)
+      // ── PHYSICS ──
       const list = particlesRef.current;
       const isSimulating = stateRef.current !== 'idle' && stateRef.current !== 'paused';
-      
+
       if (isSimulating) {
-        // Calculate all positions using double nested neighbor proximity loops (Section 2 Density Math)
-        const densityRadius = 15;
-        
+        const densityRadius = Math.min(w, h) * 0.028;
+
         for (let i = 0; i < list.length; i++) {
           const p = list[i];
           if (p.exited) continue;
 
-          // Count neighbors within radius to calculate congestion density
+          // Count neighbors
           let neighbors = 0;
           for (let j = 0; j < list.length; j++) {
             if (i === j || list[j].exited) continue;
-            const dist = Math.hypot(list[j].x - p.x, list[j].y - p.y);
-            if (dist < densityRadius) {
-              neighbors++;
-            }
+            if (Math.hypot(list[j].x - p.x, list[j].y - p.y) < densityRadius) neighbors++;
           }
 
-          // Dynamic speed and color mapping based on local crowding count
           let speedFactor = p.speed;
-          if (neighbors >= 8) {
-            p.densityColor = '#ff2e63'; // Danger (Pulsing Crimson)
-            speedFactor *= 0.05; // 95% speed drop
-          } else if (neighbors >= 4) {
-            p.densityColor = '#ff8c00'; // Warning (Orange)
-            speedFactor *= 0.45; // 55% speed drop
-          } else {
-            p.densityColor = '#00e676'; // Safe (Grass Green)
-          }
+          if (neighbors >= 8) { p.densityColor = '#ff2e63'; speedFactor *= 0.05; }
+          else if (neighbors >= 4) { p.densityColor = '#ff8c00'; speedFactor *= 0.45; }
+          else { p.densityColor = '#00e676'; }
 
-          // Target gate coordinates (PRD Sec 6 Proactive split)
           let targetKey = p.targetGate;
-          if (stateRef.current === 'rerouted' && p.originalGate === 'Gate2' && p.stand === 'South Stand') {
-            // 50% split at x > 480 (halfway between spawn at 400 and Gate 2 at 670)
-            if (p.x > 480 && p.id % 2 === 0) {
-              targetKey = 'Gate3';
-            }
-          }
-
           let target = gateCoords[targetKey];
 
-          // Proactive PALD steer split (PRD Sec 4 & 6)
+          // PALD reroute split visualization
           if (stateRef.current === 'rerouted' && p.stand === 'South Stand' && targetKey === 'Gate3') {
-            if (p.x < 480) {
-              target = { x: 480, y: 360 }; // Travel towards corridor midpoint
+            // Corridor waypoint halfway (slightly angled toward Gate 3)
+            const midX = w * 0.5 + (gateCoords.Gate3.x - w * 0.5) * 0.4;
+            const midY = h * 0.5 + (gateCoords.Gate3.y - h * 0.5) * 0.4;
+            if (p.x > midX - w * 0.05) {
+              target = gateCoords.Gate3;
             } else {
-              target = gateCoords.Gate3;    // Steer smoothly down-left to Gate 3
+              target = { x: midX, y: midY };
             }
           }
 
-          // Dynamic Buffer holding logic (PRD Sec 11.B)
+          // Buffer holding during storm
           if (stateRef.current === 'storm-alert' && p.stand === 'South Stand') {
-            target = { x: 400, y: 310 }; // Target coordinates of Plaza Buffer Zone
+            target = { x: w * 0.5, y: h * 0.62 };
           }
 
           const isTargetBlocked = targetKey === 'Gate2' && stateRef.current === 'gate2-blocked';
-
-          // Vector calculation towards target exit gate
-          const dx = target.x - p.x;
-          const dy = target.y - p.y;
+          const dx = target.x - p.x, dy = target.y - p.y;
           const distance = Math.hypot(dx, dy);
 
-          if (distance < 12) {
-            // Exit logic: particle leaves stadium
-            if (!isTargetBlocked) {
-              p.exited = true;
-              continue;
-            } else {
-              // Trapped at blocked gate
-              p.stuckTicks++;
-            }
+          if (distance < Math.min(w, h) * 0.02) {
+            if (!isTargetBlocked) { p.exited = true; continue; }
+            else { p.stuckTicks++; }
           }
 
-          // Basic vector calculation towards their assigned gate segment
-          let targetVx = (dx / distance) * speedFactor * 1.3;
-          let targetVy = (dy / distance) * speedFactor * 1.3;
+          let targetVx = (dx / distance) * speedFactor * 1.4;
+          let targetVy = (dy / distance) * speedFactor * 1.4;
 
-          // Introduce orbital holding force inside Plaza Buffer Zone (PRD Sec 11.B)
+          // Orbit inside plaza buffer
           if (stateRef.current === 'storm-alert' && p.stand === 'South Stand') {
-            const plazaDist = Math.hypot(400 - p.x, 310 - p.y);
-            if (plazaDist < 45) {
-              speedFactor *= 0.18; // Slow down speed inside the plaza circle to hover
-              targetVx = -((p.y - 310) / (plazaDist || 1)) * speedFactor * 1.5;
-              targetVy = ((p.x - 400) / (plazaDist || 1)) * speedFactor * 1.5;
+            const plazaDist = Math.hypot(w * 0.5 - p.x, h * 0.62 - p.y);
+            const plazaR = Math.min(w, h) * 0.09;
+            if (plazaDist < plazaR) {
+              speedFactor *= 0.2;
+              targetVx = -((p.y - h * 0.62) / (plazaDist || 1)) * speedFactor * 1.5;
+              targetVy = ((p.x - w * 0.5) / (plazaDist || 1)) * speedFactor * 1.5;
             }
           }
 
-          // Circular steering logic: prevent particles cutting directly through pitch
-          // Pulls them slightly radial if they venture too close to the cricket pitch (inner circle)
-          const pitchDist = Math.hypot(400 - p.x, 250 - p.y);
-          if (pitchDist < 120) {
-            // Add a boundary avoidance radial force outwards
-            const avoidanceX = (p.x - 400) / pitchDist;
-            const avoidanceY = (p.y - 250) / pitchDist;
-            targetVx += avoidanceX * 0.4;
-            targetVy += avoidanceY * 0.4;
+          // Pitch avoidance
+          const pitchDist = Math.hypot(w * 0.5 - p.x, h * 0.5 - p.y);
+          if (pitchDist < Math.min(w, h) * 0.2) {
+            const avoidX = (p.x - w * 0.5) / pitchDist;
+            const avoidY = (p.y - h * 0.5) / pitchDist;
+            targetVx += avoidX * 0.5;
+            targetVy += avoidY * 0.5;
           }
 
-          // Collision physics at Blocked Gate 2 boundary box
+          // Gate 2 barrier collision
           if (isTargetBlocked && p.targetGate === 'Gate2') {
-            const barrierLeft = 640;
-            const barrierRight = 670;
-            const barrierTop = 210;
-            const barrierBottom = 290;
-
-            if (p.x > barrierLeft - 10 && p.x < barrierRight && p.y > barrierTop && p.y < barrierBottom) {
-              // Block movement on X axis and push back
-              p.x = barrierLeft - 10;
+            const barrierX = w * 0.82;
+            if (p.x > barrierX - w * 0.02) {
+              p.x = barrierX - w * 0.02;
               targetVx = -Math.abs(targetVx) * 0.2;
-              p.vy += (Math.random() - 0.5) * 0.5; // push sideways
+              p.vy += (Math.random() - 0.5) * 0.6;
             }
           }
 
-          // Smooth velocity interpolation for fluid crowding movement
           p.vx += (targetVx - p.vx) * 0.1;
           p.vy += (targetVy - p.vy) * 0.1;
-          
           p.x += p.vx;
           p.y += p.vy;
 
-          // Out-of-bounds boundary guards
-          if (p.x < 50 || p.x > width - 50 || p.y < 30 || p.y > height - 30) {
-            p.x = 400 + (Math.random() - 0.5) * 100;
-            p.y = 250 + (Math.random() - 0.5) * 100;
-            p.vx = 0;
-            p.vy = 0;
+          // Boundary guard
+          if (p.x < w * 0.03 || p.x > w * 0.97 || p.y < h * 0.03 || p.y > h * 0.97) {
+            p.x = w * 0.5 + (Math.random() - 0.5) * w * 0.15;
+            p.y = h * 0.5 + (Math.random() - 0.5) * h * 0.15;
+            p.vx = 0; p.vy = 0;
           }
         }
       }
 
-      // 5. Draw Particles as 2D Circles (PRD Sec 4.B)
+      // Draw particles
       for (let i = 0; i < list.length; i++) {
         const p = list[i];
         if (p.exited) continue;
-
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        
         ctx.fillStyle = p.densityColor;
-        
-        // Add subtle shadow glows for highly congested/crimson particles
         if (p.densityColor === '#ff2e63') {
           ctx.save();
-          ctx.shadowBlur = 6;
+          ctx.shadowBlur = 8;
           ctx.shadowColor = '#ff2e63';
           ctx.fill();
           ctx.restore();
@@ -440,21 +349,21 @@ export default function StadiumCanvas({
         }
       }
 
-      // Draw Gate 2 Blocked Warning icon overlays on canvas
+      // Gate 2 blocked warning circle
       if (stateRef.current === 'gate2-blocked') {
+        const g2 = gateCoords.Gate2;
         ctx.save();
-        ctx.fillStyle = 'rgba(255, 46, 99, 0.1)';
+        ctx.fillStyle = 'rgba(255, 46, 99, 0.08)';
         ctx.strokeStyle = '#ff2e63';
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
-        ctx.arc(670, 250, 60, 0, Math.PI * 2);
+        ctx.arc(g2.x, g2.y, Math.min(w, h) * 0.12, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
         ctx.restore();
       }
 
-      // Active loop pointer
       animationFrameIdRef.current = requestAnimationFrame(render);
     };
 
@@ -462,42 +371,27 @@ export default function StadiumCanvas({
 
     return () => {
       cancelAnimationFrame(animationFrameIdRef.current);
+      if (statsIntervalRef.current) clearInterval(statsIntervalRef.current);
+      ro.disconnect();
     };
   }, []);
 
-  // Quick reset logic handler when simulator state resets
-  useEffect(() => {
-    if (simulationState === 'idle') {
-      initParticles();
-    }
-  }, [simulationState]);
-
   return (
-    <div className="relative w-full h-full flex flex-col justify-end">
-      {/* Absolute canvas item container */}
-      <canvas 
-        ref={canvasRef} 
-        width={800} 
-        height={500} 
+    <div ref={containerRef} style={{ position: 'absolute', inset: 0 }}>
+      <canvas
+        ref={canvasRef}
         id="stadium_physics_canvas"
-        className="w-full h-full bg-[#05070c] block cursor-crosshair"
-        style={{ objectFit: 'contain' }}
+        style={{ display: 'block', width: '100%', height: '100%', background: '#05070c', cursor: 'crosshair' }}
       />
-      
-      {/* Legend overlay */}
-      <div className="absolute top-4 left-4 p-2.5 glass-panel flex flex-col gap-1.5 text-[9px] font-semibold text-slate-400">
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#00e676]" />
-          <span>SAFE FLOW (&lt;4 NEIGHBORS)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#ff8c00]" />
-          <span>CONGESTION RISING (4-7 NEIGHBORS)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#ff2e63] shadow-[0_0_6px_#ff2e63]" />
-          <span>CRITICAL BOTTLENECK (8+ NEIGHBORS)</span>
-        </div>
+
+      {/* Legend */}
+      <div className="glass-panel" style={{ position: 'absolute', bottom: '12px', left: '12px', padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '5px', background: 'rgba(5,7,12,0.85)', border: '1px solid rgba(59,73,75,0.3)', borderRadius: '10px' }}>
+        {[['#00e676', 'SAFE FLOW'], ['#ff8c00', 'CONGESTION'], ['#ff2e63', 'CRITICAL']].map(([color, label]) => (
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: color, boxShadow: color === '#ff2e63' ? '0 0 6px #ff2e63' : 'none' }} />
+            <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '8px', fontWeight: 700, color: '#64748b', letterSpacing: '0.1em' }}>{label}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

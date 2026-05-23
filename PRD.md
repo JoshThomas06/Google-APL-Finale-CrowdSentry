@@ -41,38 +41,33 @@ To ensure absolute efficiency, high speed, and a simple setup, the project stric
 
 ---
 
-## 3. UNIFIED VISUAL INTERFACE LAYOUT
+### 3. UNIFIED VISUAL INTERFACE LAYOUT & 4-TAB SYSTEM
 
-The entire application operates as a **single-screen, highly immersive dark-mode control room** (inspired by aerospace command telemetry).
+The entire application operates as a **unified 4-Tab Navigation ("Stage") System** (inspired by modern aerospace cockpit telemetry and mission control dashboards). The user transitions between views smoothly via high-contrast header anchors:
+
+* **TACTICAL TAB:** The dual-column split: left 65% (metric cards, StadiumCanvas egress simulator, controls deck, typewriter terminal log) + right 35% (MobileApp mockup with live QR ticket and Gemini chatbot).
+* **TELEMETRY TAB:** Real-time sensor streams mapping:
+  - Left Column: Vibration levels sensor card (fluctuates around `4.2 Hz`), Acoustic Pressure sensor card (spikes up to `98.1 dB` during storm alerts or `94.6 dB` on jams with alert glow), and Thermal Density grid card (`24.1 °C`).
+  - Center Column: High-fidelity Concentric Radar sweeping dashboard (rotating sweeps, blips, signal processing bars).
+  - Right Column: Interactive Sector Status table mapping green/blue/red status indicators across sectors (A-1, A-2, B-4, C-1, C-2, D-3, D-4). Sector C-1 enters **ALERT** when gate is jammed or storm is active.
+* **LOGISTICS TAB:** Blueprint vector map and deployments tracking:
+  - Left Column: Operator Profile menu card (Operator 01, Sectors) + navigation links + DEPLOYSQUAD action trigger.
+  - Center Column: Full blueprint vector map representing live deployments (Drone Alpha, Medic Team 04, Security Unit 09) styled with grayscale elements and relative absolute positions. Show active alert banner if incident is active.
+  - Right Column: Resource allocation metrics (Battery Level avg `84%`, Estimated Response Time modifying dynamically based on state, Staff Availability `92%`) + queue of active deployments.
+* **ALERTS TAB:** Dynamic Incident Feed and Detailed Report deck:
+  - Left Column: Operator menu.
+  - Middle Column: Dynamic Incident Feed containing clickable alarm lists (Critical crowd anomalies, Breaches, sync complete info). Clicked cards load into detailed report.
+  - Right Column: Detailed Incident Report view (Report #A7-2491, satellite map layout with linear scanner overlay, recommended AI action logs, high-contrast Tactical overrides: Evac Broadcast, Rapid Response dispatch, Clear Alarm reset).
 
 ```
 +--------------------------------------------------------------------------------------------------+
-|  STITCH CROWDSENTRY AI   [CMD CENTER ACTIVE]        [PREDICTIVE RUNNING]  [API STATUS: OK]      |
-+-------------------------------------------------------------+------------------------------------+
-|                                                             |                                    |
-|  TACTICAL COMMAND CENTER (65% Width)                        |  ATTENDEE COMPANION APP (35% Width)|
-|                                                             |  +------------------------------+  |
-|  +-------------------------------------------------------+  |  |  [SIMULATED SMARTPHONE]      |  |
-|  |  LIVE TELEMETRY PANEL                                 |  |  |                              |  |
-|  |  [EGRESS SPEED] [COMFORT SCORE]  [EXTRA DISTANCE]     |  |  |  TICKET ACCESS PASS          |  |
-|  +-------------------------------------------------------+  |  |  +------------------------+  |  |
-|                                                             |  |  |   DYNAMIC QR CODE      |  |  |
-|  +-------------------------------------------------------+  |  |  |   [   GATE 3 ACCESS   ]   |  |  |
-|  |  HTML5 CANVAS STADIUM egress simulator                |  |  |  +------------------------+  |  |
-|  |                                                       |  |  |                              |  |
-|  |             [GATE 1]                                  |  |  |  LIVE EGRESS MAP ROUTE       |  |
-|  |         +--------------+                              |  |  |  (Dynamic direction lines)   |  |
-|  |  [G5]   |  STADIUM     |  [G2]                        |  |  |                              |  |
-|  |         |  egress flow |                              |  |  |  ADVISORY CHATBOT (GEMINI)   |  |
-|  |         +--------------+                              |  |  |  "Why was I redirected?"     |  |
-|  |             [GATE 3]                                  |  |  |                              |  |
-|  |                                                       |  |  |  [Agent Reply: "Diverted to  |  |
-|  +-------------------------------------------------------+  |  |  |  Gate 3 to avoid crowd.   |  |
-|                                                             |  |  |  Walk time: +1.2 mins"]      |  |
-|  +-------------+---------------+-------------------------+  |  +------------------------------+  |
-|  | CONTROLS    | MOCK API      | COMMANDER AGENT LOGS    |  |                                    |
-|  | [Block G2]  | [API Key Inp] | [REASONING TERMINAL]    |  |                                    |
-|  +-------------+---------------+-------------------------+  +------------------------------------+
+|  SENTRY AI     [TACTICAL] [TELEMETRY] [LOGISTICS] [ALERTS]      [CMD: ACTIVE]  [AI: STANDBY]     |
++--------------------------------------------------------------------------------------------------+
+|  Comfort Score [=====   ] 98%                   Extra Walk [=         ] +0.0m                     |
++--------------------------------------------------------------------------------------------------+
+|                                                                                                  |
+|   DYNAMIC VIEW CONTAINER (Loads TACTICAL | TELEMETRY | LOGISTICS | ALERTS depending on active tab)  |
+|                                                                                                  |
 +--------------------------------------------------------------------------------------------------+
 ```
 

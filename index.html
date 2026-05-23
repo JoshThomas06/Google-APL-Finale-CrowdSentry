@@ -10,6 +10,98 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@600;700;800&family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@400;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+              "secondary-container": "#44485a",
+              "error-container": "#93000a",
+              "tertiary-fixed": "#62ff96",
+              "secondary-fixed": "#dee1f7",
+              "on-secondary-container": "#b3b8cc",
+              "on-secondary-fixed": "#161b2a",
+              "on-tertiary-container": "#006e35",
+              "outline-variant": "#3b494b",
+              "tertiary-container": "#34f885",
+              "on-secondary": "#2b3040",
+              "surface-bright": "#37393f",
+              "surface-container-highest": "#33353b",
+              "on-tertiary-fixed-variant": "#005226",
+              "surface-container-high": "#282a30",
+              "primary-container": "#00f0ff",
+              "surface-tint": "#00dbe9",
+              "on-primary-fixed": "#002022",
+              "on-surface-variant": "#b9cacb",
+              "on-primary": "#00363a",
+              "on-error-container": "#ffdad6",
+              "inverse-on-surface": "#2e3036",
+              "error": "#ffb4ab",
+              "on-tertiary-fixed": "#00210b",
+              "primary-fixed": "#7df4ff",
+              "surface-dim": "#111319",
+              "on-background": "#e2e2ea",
+              "surface-variant": "#33353b",
+              "tertiary-fixed-dim": "#00e475",
+              "background": "#111319",
+              "on-primary-fixed-variant": "#004f54",
+              "on-error": "#690005",
+              "primary-fixed-dim": "#00dbe9",
+              "surface-container-lowest": "#0c0e13",
+              "secondary-fixed-dim": "#c1c6db",
+              "on-primary-container": "#006970",
+              "surface-container-low": "#191c21",
+              "surface": "#111319",
+              "primary": "#dbfcff",
+              "on-tertiary": "#003918",
+              "secondary": "#c1c6db",
+              "inverse-primary": "#006970",
+              "surface-container": "#1d2025",
+              "on-secondary-fixed-variant": "#414657",
+              "outline": "#849495",
+              "on-surface": "#e2e2ea",
+              "inverse-surface": "#e2e2ea",
+              "tertiary": "#dbffde"
+            },
+            "borderRadius": {
+              "DEFAULT": "0.125rem",
+              "lg": "0.25rem",
+              "xl": "0.5rem",
+              "full": "0.75rem",
+              "2xl": "1.5rem",
+              "3xl": "2rem"
+            },
+            "spacing": {
+              "gutter": "24px",
+              "margin-mobile": "16px",
+              "margin-desktop": "48px",
+              "panel-gap": "14px",
+              "unit": "4px"
+            },
+            "fontFamily": {
+              "body-base": ["Inter"],
+              "mono-metrics": ["JetBrains Mono"],
+              "display-lg-mobile": ["Space Grotesk"],
+              "headline-md": ["Space Grotesk"],
+              "display-lg": ["Space Grotesk"],
+              "body-sm": ["Inter"],
+              "label-caps": ["Outfit"]
+            },
+            "fontSize": {
+              "body-base": ["16px", {"lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "400"}],
+              "mono-metrics": ["18px", {"lineHeight": "24px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+              "display-lg-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+              "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "0.02em", "fontWeight": "700"}],
+              "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.03em", "fontWeight": "700"}],
+              "body-sm": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "400"}],
+              "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.15em", "fontWeight": "700"}]
+            }
+          }
+        }
+      }
+    </script>
     <style>
       /* Prevent white flash before React and CSS loads */
       html, body {
