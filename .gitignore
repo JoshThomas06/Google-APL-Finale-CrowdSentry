@@ -86,3 +86,7 @@ build/
 # OS-specific files
 .DS_Store
 Thumbs.db
+
+# Design reference files (not production code)
+stitch_stitch_crowdsentry_command_dashboard/
+*.zip

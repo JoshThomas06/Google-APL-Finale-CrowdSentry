@@ -108,7 +108,7 @@ export default function App() {
         setPendingState('rerouted');
       }
     } catch (e) {
-      console.error(e);
+      if (import.meta.env.DEV) console.error('[CrowdSentry] Orchestration error:', e);
     } finally {
       setAiLoading(false);
     }
