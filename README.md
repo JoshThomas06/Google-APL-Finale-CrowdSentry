@@ -1,6 +1,6 @@
 # CrowdSentry AI 🏟️🤖
 
-** CrowdSentry AI** is a proactive, agentic crowd orchestration and safety routing platform designed to handle stadium evacuation telemetry in real time. 
+**CrowdSentry AI** is a proactive, agentic crowd orchestration and safety routing platform designed to handle stadium evacuation telemetry in real time. 
 
 Built for the *Google Cloud Build with AI: Agentic Premier League Hackathon*, the platform shifts crowd safety from reactive tracking to proactive, proximity-aware routing. By simulating attendee flows and processing incidents (like turnstile jams or sudden lightning storms), Sentry AI ensures safe, dynamic egress routing without crowd crushing.
 
